@@ -3,7 +3,13 @@
     "allow": [
       "Bash(mkdir -p /Users/mjl/Documents/titus_website)",
       "Bash(npm ping *)",
-      "Bash(npx --yes create-next-app@latest . --ts --no-tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --yes)"
+      "Bash(npx --yes create-next-app@latest . --ts --no-tailwind --eslint --app --src-dir --import-alias \"@/*\" --use-npm --yes)",
+      "WebSearch",
+      "WebFetch(domain:www.infomaniak.com)",
+      "Bash(npm i *)",
+      "Bash(brew --version)",
+      "Read(//Applications/**)",
+      "Bash(brew list *)"
     ]
   }
 }
