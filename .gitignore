@@ -30,8 +30,12 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# Secrets. `.env*` deliberately catches .env, .env.local and anything else that
+# turns up — but NOT .env.example, which is the only record of which variables
+# the deployment needs. Without the negation below it was silently excluded,
+# and a fresh clone had nothing to copy from.
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -39,3 +43,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local tool settings: machine-specific, full of absolute paths from one
+# person's laptop. A shared .claude/settings.json may still be committed.
+.claude/settings.local.json
+
+# A checkout of someone else's UX-skills collection that ended up here as a
+# submodule with no .gitmodules — so a fresh clone got an empty directory and a
+# failing `git submodule update`. The files are kept on disk, out of the repo.
+/awesome-ux-skills/

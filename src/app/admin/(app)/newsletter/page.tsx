@@ -24,7 +24,7 @@ export default async function AdminNewsletterPage() {
         ORDER BY COALESCE(sent_at, updated_at) DESC`,
     ),
     queryOne<{ count: string }>(
-      `SELECT count(*)::text AS count FROM subscribers WHERE status = 'confirmed'`,
+      `SELECT CAST(COUNT(*) AS CHAR) AS count FROM subscribers WHERE status = 'confirmed'`,
     ),
   ]);
 

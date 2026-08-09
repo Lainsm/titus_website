@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { query, queryOne } from "@/lib/db";
+import { insert, query, queryOne } from "@/lib/db";
 import { env } from "@/lib/env";
 import type { NewsletterFormState, SendState } from "@/lib/form-states";
 import { initialSendState } from "@/lib/form-states";
@@ -47,13 +47,13 @@ export async function saveNewsletterAction(
     return { error: "", message: "Saved." };
   }
 
-  const created = await queryOne<{ id: number }>(
+  const createdId = await insert(
     `INSERT INTO newsletters (subject, intro, body_html)
-     VALUES ($1, $2, $3) RETURNING id`,
+     VALUES ($1, $2, $3)`,
     [subject, intro, bodyHtml],
   );
 
-  redirect(`/admin/newsletter/${created!.id}?saved=1`);
+  redirect(`/admin/newsletter/${createdId}?saved=1`);
 }
 
 export async function deleteNewsletterAction(formData: FormData): Promise<void> {
@@ -176,7 +176,7 @@ export async function sendNewsletterAction(
 
   if (recipients.length === 0) {
     await query(
-      `UPDATE newsletters SET status = 'sent', sent_at = COALESCE(sent_at, now()) WHERE id = $1`,
+      `UPDATE newsletters SET status = 'sent', sent_at = COALESCE(sent_at, NOW()) WHERE id = $1`,
       [newsletter.id],
     );
     return {
@@ -206,9 +206,8 @@ export async function sendNewsletterAction(
         unsubscribeUrl,
       });
       await query(
-        `INSERT INTO newsletter_deliveries (newsletter_id, subscriber_id, status)
-         VALUES ($1, $2, 'sent')
-         ON CONFLICT (newsletter_id, subscriber_id) DO NOTHING`,
+        `INSERT IGNORE INTO newsletter_deliveries (newsletter_id, subscriber_id, status)
+         VALUES ($1, $2, 'sent')`,
         [newsletter.id, recipient.id],
       );
       sent += 1;
@@ -216,7 +215,7 @@ export async function sendNewsletterAction(
       await query(
         `INSERT INTO newsletter_deliveries (newsletter_id, subscriber_id, status, error)
          VALUES ($1, $2, 'failed', $3)
-         ON CONFLICT (newsletter_id, subscriber_id) DO UPDATE SET status = 'failed', error = EXCLUDED.error`,
+         ON DUPLICATE KEY UPDATE status = 'failed', error = VALUES(error)`,
         [
           newsletter.id,
           recipient.id,
@@ -230,7 +229,7 @@ export async function sendNewsletterAction(
   }
 
   const remainingRow = await queryOne<{ count: string }>(
-    `SELECT count(*)::text AS count
+    `SELECT CAST(COUNT(*) AS CHAR) AS count
        FROM subscribers s
       WHERE s.status = 'confirmed'
         AND NOT EXISTS (
@@ -247,8 +246,8 @@ export async function sendNewsletterAction(
                            WHERE newsletter_id = $1 AND status = 'sent'),
             failed_count = (SELECT count(*) FROM newsletter_deliveries
                              WHERE newsletter_id = $1 AND status = 'failed'),
-            status = CASE WHEN $2::int = 0 THEN 'sent' ELSE 'sending' END,
-            sent_at = CASE WHEN $2::int = 0 THEN COALESCE(sent_at, now()) ELSE sent_at END
+            status = CASE WHEN $2 = 0 THEN 'sent' ELSE 'sending' END,
+            sent_at = CASE WHEN $2 = 0 THEN COALESCE(sent_at, NOW()) ELSE sent_at END
       WHERE id = $1`,
     [newsletter.id, remaining],
   );

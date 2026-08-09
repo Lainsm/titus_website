@@ -141,11 +141,11 @@ const WINDOW_MINUTES = 15;
 
 export async function tooManyAttempts(identifier: string): Promise<boolean> {
   const row = await queryOne<{ count: string }>(
-    `SELECT count(*)::text AS count
+    `SELECT CAST(COUNT(*) AS CHAR) AS count
        FROM auth_attempts
       WHERE identifier = $1
-        AND attempted_at > now() - ($2 || ' minutes')::interval`,
-    [identifier, String(WINDOW_MINUTES)],
+        AND attempted_at > NOW() - INTERVAL $2 MINUTE`,
+    [identifier, WINDOW_MINUTES],
   );
   return Number(row?.count ?? 0) >= MAX_ATTEMPTS;
 }
@@ -156,7 +156,7 @@ export async function recordAttempt(identifier: string): Promise<void> {
   ]);
   // Opportunistic cleanup so the table stays small.
   await query(
-    `DELETE FROM auth_attempts WHERE attempted_at < now() - interval '1 day'`,
+    `DELETE FROM auth_attempts WHERE attempted_at < now() - INTERVAL 1 DAY`,
   );
 }
 

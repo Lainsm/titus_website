@@ -57,8 +57,22 @@ export default async function PostPage({ params }: Props) {
     <>
       <script
         type="application/ld+json"
-        // Server-rendered from our own database, no user input path.
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        /*
+         * JSON.stringify is not enough on its own: it happily emits a literal
+         * `</script>` inside a string, which closes this tag early and lets
+         * everything after it parse as markup. A title is authored in the back
+         * office rather than by the public, but "only an admin can reach it"
+         * is an authorisation argument, not an escaping one — and this is the
+         * one place on the site where a title is written into a script body.
+         * Escaping < and & costs nothing and holds regardless.
+         */
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd)
+            .replace(/</g, "\\u003c")
+            .replace(/&/g, "\\u0026")
+            .replace(/\u2028/g, "\\u2028")
+            .replace(/\u2029/g, "\\u2029"),
+        }}
       />
 
       <article className="article">

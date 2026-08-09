@@ -6,35 +6,21 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import pg from "pg";
+import { connect } from "./db-connect.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const migrationsDir = join(here, "..", "db", "migrations");
 
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  console.error("DATABASE_URL is not set. See .env.example.");
-  process.exit(1);
-}
-
-const client = new pg.Client({
-  connectionString,
-  ssl:
-    process.env.PGSSLMODE === "require"
-      ? { rejectUnauthorized: false }
-      : undefined,
-});
-
-await client.connect();
+const client = await connect();
 
 await client.query(`
   CREATE TABLE IF NOT EXISTS _migrations (
-    name       TEXT PRIMARY KEY,
-    applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-  )
+    name       VARCHAR(255) NOT NULL PRIMARY KEY,
+    applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 `);
 
-const { rows } = await client.query("SELECT name FROM _migrations");
+const [rows] = await client.query("SELECT name FROM _migrations");
 const applied = new Set(rows.map((r) => r.name));
 
 const files = readdirSync(migrationsDir)
@@ -47,14 +33,14 @@ for (const file of files) {
   const sql = readFileSync(join(migrationsDir, file), "utf8");
   process.stdout.write(`applying ${file} … `);
   try {
-    await client.query("BEGIN");
+    // MariaDB commits DDL implicitly, so a wrapping transaction would not roll
+    // a half-applied schema file back. The file is recorded only once it has
+    // fully succeeded, which is what makes a re-run safe.
     await client.query(sql);
-    await client.query("INSERT INTO _migrations (name) VALUES ($1)", [file]);
-    await client.query("COMMIT");
+    await client.query("INSERT INTO _migrations (name) VALUES (?)", [file]);
     console.log("ok");
     count += 1;
   } catch (error) {
-    await client.query("ROLLBACK");
     console.log("failed");
     console.error(error.message);
     await client.end();

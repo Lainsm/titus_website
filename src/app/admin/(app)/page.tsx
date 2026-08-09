@@ -10,10 +10,10 @@ export default async function AdminOverview() {
   const [posts, subscriberRows, newsletterRows] = await Promise.all([
     listAllPosts(),
     query<{ status: string; count: string }>(
-      `SELECT status, count(*)::text AS count FROM subscribers GROUP BY status`,
+      `SELECT status, CAST(COUNT(*) AS CHAR) AS count FROM subscribers GROUP BY status`,
     ),
     query<{ status: string; count: string }>(
-      `SELECT status, count(*)::text AS count FROM newsletters GROUP BY status`,
+      `SELECT status, CAST(COUNT(*) AS CHAR) AS count FROM newsletters GROUP BY status`,
     ),
   ]);
 

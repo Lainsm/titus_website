@@ -6,7 +6,7 @@
  *
  *   npm run db:seed
  */
-import pg from "pg";
+import { connect } from "./db-connect.mjs";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -14,15 +14,8 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const client = new pg.Client({
-  connectionString,
-  ssl:
-    process.env.PGSSLMODE === "require"
-      ? { rejectUnauthorized: false }
-      : undefined,
-});
+const client = await connect();
 
-await client.connect();
 
 // Straight quotes on purpose: the site converts them to «Guillemets» when it
 // renders, which is what the Swiss convention asks for.
@@ -87,11 +80,10 @@ const posts = [
 let inserted = 0;
 
 for (const post of posts) {
-  const { rowCount } = await client.query(
-    `INSERT INTO posts
+  const [result] = await client.query(
+    `INSERT IGNORE INTO posts
        (slug, title, subtitle, category, lead, body_html, word_count, status, published_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, 'published', now() - ($8 || ' days')::interval)
-     ON CONFLICT (slug) DO NOTHING`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, 'published', NOW() - INTERVAL $8 DAY)`,
     [
       post.slug,
       post.title,
@@ -103,13 +95,13 @@ for (const post of posts) {
       String(post.days_ago),
     ],
   );
-  inserted += rowCount;
+  inserted += result.affectedRows;
 }
 
 await client.query(
-  `INSERT INTO pages (slug, title, body_html)
+  `INSERT IGNORE INTO pages (slug, title, body_html)
    VALUES ('ueber', 'Über', $1)
-   ON CONFLICT (slug) DO NOTHING`,
+`,
   [
     `<p>Ich bin Arzt und schreibe. Das eine erklärt das andere nicht, aber es hat damit zu tun: Wer täglich zuhört, sammelt Geschichten, ob er will oder nicht.</p>
 <p>Auf dieser Seite stehen Erzählungen, Essays und gelegentlich ein Kommentar. Die Erzählungen sind erfunden, auch dort, wo sie es nicht scheinen. Die Essays sind Versuche im Wortsinn — Gedankengänge, die ich zu Ende gehen wollte, um zu sehen, wohin sie führen.</p>
@@ -118,7 +110,7 @@ await client.query(
 );
 
 await client.query(
-  `INSERT INTO publications (title, subtitle, publisher, year, kind, description, sort_order)
+  `INSERT IGNORE INTO publications (title, subtitle, publisher, year, kind, description, sort_order)
    SELECT $1, $2, $3, $4, $5, $6, $7
     WHERE NOT EXISTS (SELECT 1 FROM publications WHERE title = $1)`,
   [

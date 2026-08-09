@@ -5,6 +5,7 @@ import { randomToken } from "@/lib/auth";
 import { env } from "@/lib/env";
 import type { SubscribeState } from "@/lib/form-states";
 import { confirmationEmail, sendMail } from "@/lib/mail";
+import { guard } from "@/lib/rate-limit";
 
 
 // Deliberately permissive: the confirmation mail is the real validation.
@@ -21,8 +22,22 @@ export async function subscribeAction(
 
   const email = String(formData.get("email") ?? "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .slice(0, 200);
   const name = String(formData.get("name") ?? "").trim().slice(0, 120);
+
+  /*
+   * Unauthenticated, and it sends mail to an address the caller chose — which
+   * makes it a way to post confirmation mails at strangers. Throttled before
+   * the address is even looked at.
+   */
+  if (!(await guard("subscribe", { max: 5, windowMinutes: 15 }, { max: 60, windowMinutes: 60 }))) {
+    return {
+      status: "error",
+      message:
+        "Es wurden zu viele Anmeldungen versucht. Bitte versuchen Sie es später noch einmal.",
+    };
+  }
 
   if (!EMAIL_PATTERN.test(email)) {
     return {

@@ -22,7 +22,19 @@ export async function GET() {
       ORDER BY created_at ASC`,
   );
 
-  const escape = (value: string) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+  /*
+   * Quoting alone is not enough. Subscriber names arrive from a public form,
+   * and Excel and Sheets treat a leading =, +, - or @ as the start of a
+   * formula — so a name like `=HYPERLINK("http://evil","click")` executes when
+   * the author opens their own export. Prefixing a single quote makes the cell
+   * literal text; it is the standard mitigation for CSV injection and is
+   * stripped from view by every spreadsheet that honours it.
+   */
+  const escape = (value: string) => {
+    const raw = String(value ?? "");
+    const safe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+    return `"${safe.replace(/"/g, '""')}"`;
+  };
 
   const csv = [
     ["email", "name", "status", "signed_up", "confirmed"].join(","),

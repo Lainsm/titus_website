@@ -26,11 +26,10 @@ export async function savePageAction(
 
   await query(
     `INSERT INTO pages (slug, title, body_html, updated_at)
-     VALUES ($1, $2, $3, now())
-     ON CONFLICT (slug)
-     DO UPDATE SET title = EXCLUDED.title,
-                   body_html = EXCLUDED.body_html,
-                   updated_at = now()`,
+     VALUES ($1, $2, $3, NOW())
+     ON DUPLICATE KEY UPDATE title = VALUES(title),
+                             body_html = VALUES(body_html),
+                             updated_at = NOW()`,
     [slug, title || slug, bodyHtml],
   );
 

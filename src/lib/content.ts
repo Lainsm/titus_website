@@ -87,12 +87,12 @@ export async function getNeighbours(post: {
 export async function countPublishedPosts(category?: string): Promise<number> {
   const row = category
     ? await queryOne<{ count: string }>(
-        `SELECT count(*)::text AS count FROM posts
+        `SELECT CAST(COUNT(*) AS CHAR) AS count FROM posts
           WHERE status = 'published' AND published_at <= now() AND category = $1`,
         [category],
       )
     : await queryOne<{ count: string }>(
-        `SELECT count(*)::text AS count FROM posts
+        `SELECT CAST(COUNT(*) AS CHAR) AS count FROM posts
           WHERE status = 'published' AND published_at <= now()`,
       );
   return Number(row?.count ?? 0);
@@ -100,7 +100,7 @@ export async function countPublishedPosts(category?: string): Promise<number> {
 
 export async function categoryCounts(): Promise<Record<string, number>> {
   const rows = await query<{ category: string; count: string }>(
-    `SELECT category, count(*)::text AS count FROM posts
+    `SELECT category, CAST(COUNT(*) AS CHAR) AS count FROM posts
       WHERE status = 'published' AND published_at <= now()
       GROUP BY category`,
   );
@@ -181,7 +181,7 @@ export async function listPublications(): Promise<Publication[]> {
   return query<Publication>(
     `SELECT id, title, subtitle, publisher, year, kind, description, url, isbn, sort_order
        FROM publications
-      ORDER BY sort_order ASC, year DESC NULLS LAST, title ASC`,
+      ORDER BY sort_order ASC, year DESC, title ASC`,
   );
 }
 

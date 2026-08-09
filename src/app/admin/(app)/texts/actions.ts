@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { takenSlugs } from "@/lib/content";
-import { query, queryOne } from "@/lib/db";
+import { insert, query, queryOne } from "@/lib/db";
 import type { PostFormState } from "@/lib/form-states";
 import { sanitizeProse } from "@/lib/sanitize";
 import { CATEGORY_KEYS } from "@/lib/site";
@@ -111,11 +111,11 @@ export async function savePostAction(
     };
   }
 
-  const created = await queryOne<{ id: number }>(
+  // MariaDB has no portable RETURNING; insert() hands back insertId instead.
+  const createdId = await insert(
     `INSERT INTO posts
        (slug, title, subtitle, category, lead, body_html, word_count, status, published_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING id`,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
     [
       slug,
       title,
@@ -130,7 +130,7 @@ export async function savePostAction(
   );
 
   refreshPublicPages(slug);
-  redirect(`/admin/texts/${created!.id}?saved=1`);
+  redirect(`/admin/texts/${createdId}?saved=1`);
 }
 
 export async function deletePostAction(formData: FormData): Promise<void> {

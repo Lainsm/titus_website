@@ -31,9 +31,24 @@ export type MailInput = {
   /** Overrides the configured Reply-To. The contact form points it at the
       sender, so hitting reply in the mail client answers them directly. */
   replyTo?: string;
-  /** Adds List-Unsubscribe headers so Gmail shows a native unsubscribe link. */
+  /**
+   * Adds List-Unsubscribe headers so Gmail shows a native unsubscribe link.
+   * This is the human-facing page; the One-Click POST target is derived from
+   * it below, because RFC 8058 requires the advertised URL to accept a POST.
+   */
   unsubscribeUrl?: string;
 };
+
+/** /newsletter/abmelden?token=… → /newsletter/abmelden/api?token=… */
+function oneClickUrl(pageUrl: string): string {
+  try {
+    const url = new URL(pageUrl);
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/api`;
+    return url.toString();
+  } catch {
+    return pageUrl;
+  }
+}
 
 export async function sendMail(input: MailInput): Promise<void> {
   if (!env.mailConfigured) {
@@ -54,9 +69,15 @@ export async function sendMail(input: MailInput): Promise<void> {
     subject: input.subject,
     html: input.html,
     text: input.text ?? htmlToText(input.html),
+    /*
+     * The URL in List-Unsubscribe is the one mail providers POST to when the
+     * reader presses their unsubscribe button, so it has to be the route
+     * handler, not the page. /newsletter/abmelden/api takes the POST and the
+     * page beside it still serves the visible link in the mail body.
+     */
     headers: input.unsubscribeUrl
       ? {
-          "List-Unsubscribe": `<${input.unsubscribeUrl}>`,
+          "List-Unsubscribe": `<${oneClickUrl(input.unsubscribeUrl)}>`,
           "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
         }
       : undefined,

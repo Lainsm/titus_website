@@ -1,116 +1,134 @@
--- Initial schema for the Titus website.
+-- Initial schema for the Titus website. MariaDB / MySQL.
+--
+-- Notes on the port from PostgreSQL, because the differences are not cosmetic:
+--
+--  * MariaDB cannot index a TEXT column without a prefix length, so every
+--    column that carries a PRIMARY KEY, UNIQUE or INDEX is a sized VARCHAR.
+--    The widths are chosen from what actually goes in them: a SHA-256 hex
+--    digest is 64 characters, a base64url token of 32 bytes is 43.
+--  * There are no partial indexes. The Postgres schema had
+--    `UNIQUE (confirm_token) WHERE confirm_token IS NOT NULL`; MariaDB allows
+--    any number of NULLs in a UNIQUE index already, so a plain one is exactly
+--    equivalent here.
+--  * DATETIME has no time zone. Everything is written and read as UTC — the
+--    connection sets time_zone = '+00:00' (see src/lib/db.ts), so NOW() is UTC
+--    and JS Date values round-trip without shifting.
+--  * utf8mb4 throughout, or German text with an emoji in it truncates.
 
 CREATE TABLE IF NOT EXISTS users (
-  id            SERIAL PRIMARY KEY,
-  email         TEXT NOT NULL UNIQUE,
-  name          TEXT NOT NULL DEFAULT '',
-  password_hash TEXT NOT NULL,
-  created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  email         VARCHAR(255) NOT NULL UNIQUE,
+  name          VARCHAR(255) NOT NULL DEFAULT '',
+  password_hash VARCHAR(255) NOT NULL,
+  created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Session tokens are stored as SHA-256 hashes; the raw token lives only in the
 -- browser cookie, so a database leak cannot be replayed as a login.
 CREATE TABLE IF NOT EXISTS sessions (
-  token_hash TEXT PRIMARY KEY,
-  user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS sessions_user_id_idx ON sessions(user_id);
-CREATE INDEX IF NOT EXISTS sessions_expires_at_idx ON sessions(expires_at);
+  token_hash VARCHAR(64) NOT NULL PRIMARY KEY,
+  user_id    INT NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT sessions_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  INDEX sessions_user_id_idx (user_id),
+  INDEX sessions_expires_at_idx (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS posts (
-  id              SERIAL PRIMARY KEY,
-  slug            TEXT NOT NULL UNIQUE,
-  title           TEXT NOT NULL,
-  subtitle        TEXT NOT NULL DEFAULT '',
-  category        TEXT NOT NULL DEFAULT 'erzaehlung'
-                    CHECK (category IN ('erzaehlung', 'essay', 'kommentar', 'notiz')),
-  lead            TEXT NOT NULL DEFAULT '',
-  body_html       TEXT NOT NULL DEFAULT '',
-  word_count      INTEGER NOT NULL DEFAULT 0,
-  status          TEXT NOT NULL DEFAULT 'draft'
-                    CHECK (status IN ('draft', 'published')),
-  published_at    TIMESTAMPTZ,
-  created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at      TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS posts_published_idx
-  ON posts(status, published_at DESC);
-CREATE INDEX IF NOT EXISTS posts_category_idx ON posts(category);
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  slug         VARCHAR(255) NOT NULL UNIQUE,
+  title        TEXT NOT NULL,
+  subtitle     TEXT NOT NULL DEFAULT '',
+  category     VARCHAR(32) NOT NULL DEFAULT 'erzaehlung',
+  lead         TEXT NOT NULL DEFAULT '',
+  body_html    LONGTEXT NOT NULL DEFAULT '',
+  word_count   INT NOT NULL DEFAULT 0,
+  status       VARCHAR(16) NOT NULL DEFAULT 'draft',
+  published_at DATETIME NULL,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT posts_category_chk
+    CHECK (category IN ('erzaehlung', 'essay', 'kommentar', 'notiz')),
+  CONSTRAINT posts_status_chk CHECK (status IN ('draft', 'published')),
+  INDEX posts_published_idx (status, published_at DESC),
+  INDEX posts_category_idx (category)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Editable standing pages (Über, Impressum, Datenschutz).
 CREATE TABLE IF NOT EXISTS pages (
-  slug       TEXT PRIMARY KEY,
+  slug       VARCHAR(255) NOT NULL PRIMARY KEY,
   title      TEXT NOT NULL,
-  body_html  TEXT NOT NULL DEFAULT '',
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+  body_html  LONGTEXT NOT NULL DEFAULT '',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS publications (
-  id          SERIAL PRIMARY KEY,
+  id          INT AUTO_INCREMENT PRIMARY KEY,
   title       TEXT NOT NULL,
   subtitle    TEXT NOT NULL DEFAULT '',
   publisher   TEXT NOT NULL DEFAULT '',
-  year        INTEGER,
-  kind        TEXT NOT NULL DEFAULT 'buch'
-                CHECK (kind IN ('buch', 'beitrag', 'artikel', 'vortrag')),
+  year        INT NULL,
+  kind        VARCHAR(32) NOT NULL DEFAULT 'buch',
   description TEXT NOT NULL DEFAULT '',
   url         TEXT NOT NULL DEFAULT '',
-  isbn        TEXT NOT NULL DEFAULT '',
-  sort_order  INTEGER NOT NULL DEFAULT 0,
-  created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS publications_sort_idx
-  ON publications(sort_order, year DESC);
+  isbn        VARCHAR(32) NOT NULL DEFAULT '',
+  sort_order  INT NOT NULL DEFAULT 0,
+  created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT publications_kind_chk
+    CHECK (kind IN ('buch', 'beitrag', 'artikel', 'vortrag')),
+  INDEX publications_sort_idx (sort_order, year DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS subscribers (
-  id                 SERIAL PRIMARY KEY,
-  email              TEXT NOT NULL UNIQUE,
-  name               TEXT NOT NULL DEFAULT '',
-  status             TEXT NOT NULL DEFAULT 'pending'
-                       CHECK (status IN ('pending', 'confirmed', 'unsubscribed')),
-  confirm_token      TEXT,
-  unsubscribe_token  TEXT NOT NULL,
-  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
-  confirmed_at       TIMESTAMPTZ,
-  unsubscribed_at    TIMESTAMPTZ
-);
-CREATE INDEX IF NOT EXISTS subscribers_status_idx ON subscribers(status);
-CREATE UNIQUE INDEX IF NOT EXISTS subscribers_confirm_token_idx
-  ON subscribers(confirm_token) WHERE confirm_token IS NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS subscribers_unsubscribe_token_idx
-  ON subscribers(unsubscribe_token);
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  email             VARCHAR(255) NOT NULL UNIQUE,
+  name              VARCHAR(255) NOT NULL DEFAULT '',
+  status            VARCHAR(16) NOT NULL DEFAULT 'pending',
+  confirm_token     VARCHAR(64) NULL UNIQUE,
+  unsubscribe_token VARCHAR(64) NOT NULL UNIQUE,
+  created_at        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  confirmed_at      DATETIME NULL,
+  unsubscribed_at   DATETIME NULL,
+  CONSTRAINT subscribers_status_chk
+    CHECK (status IN ('pending', 'confirmed', 'unsubscribed')),
+  INDEX subscribers_status_idx (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS newsletters (
-  id           SERIAL PRIMARY KEY,
+  id           INT AUTO_INCREMENT PRIMARY KEY,
   subject      TEXT NOT NULL DEFAULT '',
   intro        TEXT NOT NULL DEFAULT '',
-  body_html    TEXT NOT NULL DEFAULT '',
-  status       TEXT NOT NULL DEFAULT 'draft'
-                 CHECK (status IN ('draft', 'sending', 'sent', 'failed')),
-  sent_at      TIMESTAMPTZ,
-  sent_count   INTEGER NOT NULL DEFAULT 0,
-  failed_count INTEGER NOT NULL DEFAULT 0,
-  created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
-);
+  body_html    LONGTEXT NOT NULL DEFAULT '',
+  status       VARCHAR(16) NOT NULL DEFAULT 'draft',
+  sent_at      DATETIME NULL,
+  sent_count   INT NOT NULL DEFAULT 0,
+  failed_count INT NOT NULL DEFAULT 0,
+  created_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at   DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT newsletters_status_chk
+    CHECK (status IN ('draft', 'sending', 'sent', 'failed'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- One row per recipient, so a retry never sends the same issue twice.
 CREATE TABLE IF NOT EXISTS newsletter_deliveries (
-  newsletter_id INTEGER NOT NULL REFERENCES newsletters(id) ON DELETE CASCADE,
-  subscriber_id INTEGER NOT NULL REFERENCES subscribers(id) ON DELETE CASCADE,
-  status        TEXT NOT NULL CHECK (status IN ('sent', 'failed')),
+  newsletter_id INT NOT NULL,
+  subscriber_id INT NOT NULL,
+  status        VARCHAR(16) NOT NULL,
   error         TEXT NOT NULL DEFAULT '',
-  sent_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-  PRIMARY KEY (newsletter_id, subscriber_id)
-);
+  sent_at       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (newsletter_id, subscriber_id),
+  CONSTRAINT deliveries_status_chk CHECK (status IN ('sent', 'failed')),
+  CONSTRAINT deliveries_newsletter_fk FOREIGN KEY (newsletter_id)
+    REFERENCES newsletters(id) ON DELETE CASCADE,
+  CONSTRAINT deliveries_subscriber_fk FOREIGN KEY (subscriber_id)
+    REFERENCES subscribers(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Throttles brute-force login attempts without needing Redis.
 CREATE TABLE IF NOT EXISTS auth_attempts (
-  id           SERIAL PRIMARY KEY,
-  identifier   TEXT NOT NULL,
-  attempted_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-CREATE INDEX IF NOT EXISTS auth_attempts_idx
-  ON auth_attempts(identifier, attempted_at DESC);
+  id           INT AUTO_INCREMENT PRIMARY KEY,
+  identifier   VARCHAR(255) NOT NULL,
+  attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX auth_attempts_idx (identifier, attempted_at DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

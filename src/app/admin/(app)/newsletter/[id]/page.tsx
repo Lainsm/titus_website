@@ -35,9 +35,9 @@ export default async function EditNewsletterPage({
 
   const stats = await queryOne<{ recipients: string; delivered: string }>(
     `SELECT
-       (SELECT count(*) FROM subscribers WHERE status = 'confirmed')::text AS recipients,
-       (SELECT count(*) FROM newsletter_deliveries
-         WHERE newsletter_id = $1 AND status = 'sent')::text AS delivered`,
+       CAST((SELECT COUNT(*) FROM subscribers WHERE status = 'confirmed') AS CHAR) AS recipients,
+       CAST((SELECT COUNT(*) FROM newsletter_deliveries
+         WHERE newsletter_id = $1 AND status = 'sent') AS CHAR) AS delivered`,
     [issue.id],
   );
 

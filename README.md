@@ -4,7 +4,7 @@ A personal publishing site for a Swiss-German author: stories, essays and
 commentary in German, a newsletter with double opt-in, and a private editorial
 area where new texts are written and published.
 
-Built with Next.js 16 (App Router), PostgreSQL and plain CSS. No analytics, no
+Built with Next.js 16 (App Router), MariaDB and plain CSS. No analytics, no
 third-party fonts, no tracking cookies — everything is served from one server.
 
 ---
@@ -12,7 +12,7 @@ third-party fonts, no tracking cookies — everything is served from one server.
 ## Table of contents
 
 1. [Running it locally](#running-it-locally)
-2. [Deploying to Infomaniak](#deploying-to-infomaniak) ← **read the note about PostgreSQL**
+2. [Deploying to Infomaniak](#deploying-to-infomaniak)
 3. [Environment variables](#environment-variables)
 4. [How the site is put together](#how-the-site-is-put-together)
 5. [Typography and design notes](#typography-and-design-notes)
@@ -23,13 +23,18 @@ third-party fonts, no tracking cookies — everything is served from one server.
 
 ## Running it locally
 
-You need Node 20 or newer and a PostgreSQL database.
+You need Node 20.12 or newer and a MariaDB (or MySQL) database.
 
 ```bash
+brew install mariadb && brew services start mariadb   # macOS; any MariaDB will do
+mysql -u root -e "CREATE DATABASE titus CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+                  CREATE USER 'titus'@'localhost' IDENTIFIED BY 'titus';
+                  GRANT ALL ON titus.* TO 'titus'@'localhost';"
+
 npm install
 cp .env.example .env.local        # then fill in DATABASE_URL
 npm run db:migrate                # creates the tables
-npm run admin:create -- titus@example.ch "Titus Lainsbury"
+npm run admin:create -- titus@example.ch "Titus Bihl"
 npm run db:seed                   # optional: three sample texts, so there is something to look at
 npm run dev
 ```
@@ -45,23 +50,21 @@ be tried out before any mailbox exists.
 
 ## Deploying to Infomaniak
 
-### An honest note about PostgreSQL first
+### One product, one bill
 
-Infomaniak's **managed Node.js hosting** is a good fit for this app — it gives
-you SSH, npm, Git deployment, a chosen Node version and a dashboard to
-start/stop the process. But the database it includes is **MariaDB, not
-PostgreSQL**. This app is written against PostgreSQL, which you chose.
+The app runs on Infomaniak's **web hosting with Node.js**, and uses the
+**MariaDB** database that comes with that same hosting. Nothing else to rent:
+no Public Cloud, no managed database service, no VPS to patch.
 
-That leaves three options:
+That is why the app is written against MariaDB rather than PostgreSQL — the
+bundled database is MySQL/MariaDB, and matching it keeps the whole site on one
+product. Create the database in the Manager's **Databases** section and paste
+its host, name and credentials into `DATABASE_URL`.
 
-| Option | What it means |
-| --- | --- |
-| **A. Infomaniak Public Cloud** (recommended) | An OpenStack VM in Geneva or Winterthur. You run both Postgres and the app on it. Full control, still entirely Swiss, but you patch and back up the machine yourself. |
-| **B. Node.js hosting + Postgres elsewhere** | Keep the managed Node.js hosting and point `DATABASE_URL` at a Postgres you run or rent separately. Simplest operationally, but the database may leave Infomaniak unless they offer a managed Postgres on your plan — worth one support ticket to confirm. |
-| **C. Port the app to MariaDB** | Stay entirely on the standard Node.js hosting. See [Switching to MariaDB](#switching-to-mariadb) below for what that costs. |
-
-Nothing in the application logic depends on the choice — only the database
-driver and the SQL dialect do.
+Because the database sits on the same hosting as the app, `DB_SSL` stays off.
+Turn it on only if you ever move the database somewhere else — and then read
+the note on `DB_SSL_CA` in the environment table below, because verification is
+on by default and will fail loudly rather than silently trusting anyone.
 
 ### Building for upload
 
@@ -79,20 +82,49 @@ node server.js
 
 It listens on `PORT` (Infomaniak sets this for you) and `HOSTNAME`. In the
 Infomaniak dashboard set the **entry point** to `server.js` and the **build
-command** to `npm run build:deploy`.
+command** to `npm run build:deploy`. Node must be **20.12 or newer** (the
+scripts use `--env-file-if-exists`).
+
+> **`.env.local` is not read by the standalone server.** It is a development
+> convenience only. Every variable in `.env.example` has to be set in the
+> Infomaniak dashboard's environment section, or the server starts and then
+> returns 500 on the first request that touches the database.
+
+### Environment variables that are easy to miss
+
+| Variable | Why it matters |
+| --- | --- |
+| `SITE_URL` | Two jobs. It builds every confirmation and unsubscribe link, **and** it is the origin Next.js allows Server Actions from (`serverActions.allowedOrigins` in `next.config.ts`). Behind Infomaniak's reverse proxy the host Next sees is not the one the browser used, so if this is wrong or unset every form on the site fails its CSRF check. It must be set for `npm run build:deploy` as well as at runtime. |
+| `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Next encrypts the variables a Server Action closes over. Left unset it invents a new key per build, so a reader who was mid-submit across a deploy gets "Failed to find Server Action". Generate once with `openssl rand -base64 32` and keep it. Needed at build **and** run time. |
+| `DB_SSL` / `DB_SSL_CA` | Leave `DB_SSL=0` on Infomaniak web hosting, where the database is on the same host. Set it to `1` if the database ever moves elsewhere; the certificate is then verified, and `DB_SSL_CA` takes the provider's PEM if their CA is not in the system store. `DB_SSL_INSECURE=1` turns verification off — it encrypts but authenticates nothing, so only on a trusted local network. |
 
 ### First run on the server
 
 ```bash
 npm run db:migrate
-npm run admin:create -- titus@example.ch "Titus Lainsbury"
+npm run admin:create -- titus@bihl.ch "Titus Bihl"
 ```
 
 ### Checklist before going live
 
 - [ ] `SITE_URL` is the real `https://` domain, with no trailing slash — every
-      confirmation and unsubscribe link is built from it.
-- [ ] `PGSSLMODE=require` if the database is on a different host than the app.
+      confirmation and unsubscribe link is built from it, and Server Actions
+      are refused from any other origin.
+- [ ] `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` is set, and is the same value used
+      for the build and for the running process.
+- [ ] `DB_SSL=1` **only** if the database is on a different host than the app,
+      with `DB_SSL_CA` if the provider's CA is not in the system trust store.
+      On Infomaniak's own hosting it stays `0`.
+- [ ] HTTPS is live **before** the domain is public. The app sends
+      `Strict-Transport-Security` with a two-year max-age, which a browser
+      remembers — serving plain HTTP afterwards will fail for anyone who has
+      already visited.
+- [ ] Submit the contact form and the newsletter form once on the real domain.
+      Both are rate limited (5 per 15 minutes per address, 60 per hour
+      overall); if `SITE_URL` is wrong they fail instead with a CSRF error.
+- [ ] Press the unsubscribe button in a real Gmail message, not just the link
+      in the mail body — that exercises the one-click `POST` endpoint at
+      `/newsletter/abmelden/api`.
 - [ ] SMTP credentials are set and the **Send a test to myself** button in
       *Newsletter* delivers a real message.
 - [ ] SPF and DKIM are configured for the sending domain in the Infomaniak
@@ -100,21 +132,28 @@ npm run admin:create -- titus@example.ch "Titus Lainsbury"
 - [ ] The Impressum page has real contact details (Editorial → Pages).
 - [ ] A database backup runs on a schedule.
 
-### Switching to MariaDB
+### Notes from the PostgreSQL → MariaDB port
 
-All the SQL lives in `db/migrations/001_init.sql`, `src/lib/`, the `actions.ts`
-files under `src/app/`, and the admin pages that query directly. Moving to
-MariaDB means:
+The app was originally written against PostgreSQL. The differences that
+actually mattered, in case any of them ever bites again:
 
-- `SERIAL` → `INT AUTO_INCREMENT`, `TIMESTAMPTZ` → `DATETIME`
-- `$1, $2` placeholders → `?`
-- `ON CONFLICT … DO UPDATE` → `ON DUPLICATE KEY UPDATE`
-- `now() - interval '15 minutes'` → `NOW() - INTERVAL 15 MINUTE`
-- partial unique indexes (`… WHERE confirm_token IS NOT NULL`) have no direct
-  equivalent and need handling in application code
-- swap `pg` for `mysql2` in `src/lib/db.ts`
-
-Half a day of careful work, and `npm run test:db` will tell you when it is right.
+- `src/lib/db.ts` rewrites Postgres-style `$1` placeholders to `?` on the way
+  through, so the ~190 call sites kept their SQL. Only genuinely dialect-specific
+  statements were touched.
+- MariaDB cannot index a `TEXT` column without a prefix length, so every
+  indexed column is a sized `VARCHAR`.
+- `RETURNING id` became `insert()` in `db.ts`, which returns `insertId`.
+- `ON CONFLICT … DO UPDATE` → `ON DUPLICATE KEY UPDATE … VALUES(col)`;
+  `DO NOTHING` → `INSERT IGNORE`.
+- `now() - interval '15 minutes'` → `NOW() - INTERVAL 15 MINUTE`;
+  `count(*)::text` → `CAST(COUNT(*) AS CHAR)`; `NULLS LAST` is implicit in
+  `DESC` and was simply dropped.
+- Partial unique indexes have no equivalent, but MariaDB already allows any
+  number of `NULL`s in a `UNIQUE` index, so the behaviour carried over.
+- `DATETIME` has no time zone: the pool sets `time_zone = '+00:00'` and passes
+  `timezone: "Z"`, so everything is stored and read as UTC.
+- `TEXT` columns need their `DEFAULT ''` stated explicitly, or a partial
+  `INSERT` fails under strict mode. `npm run test:db` caught exactly that.
 
 ---
 
@@ -122,8 +161,8 @@ Half a day of careful work, and `npm run test:db` will tell you when it is right
 
 | Variable | Purpose |
 | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string. Required. |
-| `PGSSLMODE` | Set to `require` when the database is on another host. |
+| `DATABASE_URL` | MariaDB/MySQL connection string, e.g. `mysql://user:pass@host:3306/db`. Required. |
+| `DB_SSL` | `1` when the database is on another host. Off for Infomaniak web hosting. |
 | `SITE_URL` | Public base URL, no trailing slash. Used for every link in outgoing mail. |
 | `SMTP_HOST` | `mail.infomaniak.com` |
 | `SMTP_PORT` | `587` (STARTTLS) or `465` (implicit TLS) |
@@ -151,7 +190,7 @@ src/app/
   feed.xml/ sitemap.ts robots.ts
 src/components/      shared UI, including the Tiptap editor
 src/lib/
-  db.ts              pooled Postgres access
+  db.ts              pooled MariaDB access ($1 → ? translation lives here)
   auth.ts            scrypt passwords, hashed session tokens, login throttling
   typography.ts      Swiss-German typographic rules
   slug.ts            German-aware URL slugs
@@ -225,12 +264,13 @@ To change the author's name, the categories or the tagline, edit
 ```bash
 npm test              # both suites
 npm run test:typography   # 32 checks on the German typographic rules and slugs
-npm run test:db           # 28 checks running the real schema in an in-process Postgres
+npm run test:db           # 37 checks running the real schema against a scratch MariaDB
 npm run typecheck
 npm run lint
 ```
 
-`test:db` uses PGlite, a WebAssembly build of PostgreSQL, so it needs no
+`test:db` creates `<your db>_smoketest`, migrates it, asserts against it and
+drops it again, so your development data is never touched. It needs no
 database server. It exercises the real migration file and the real queries:
 draft/publish visibility, future-dated posts, the double opt-in flow, the
 batched send, and the guarantee that nobody is mailed twice.
