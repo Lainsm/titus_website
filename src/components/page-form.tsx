@@ -60,7 +60,7 @@ export function PageForm({
       <div className="admin-form__side">
         <div className="panel">
           <p className="panel__title">Publishing</p>
-          <p className="field__hint" style={{ marginBottom: "var(--space-4)" }}>
+          <p className="field__hint field__hint--before">
             Standing pages go live as soon as you save — there is no draft
             state for them.
           </p>

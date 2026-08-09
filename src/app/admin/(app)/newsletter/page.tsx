@@ -47,7 +47,7 @@ export default async function AdminNewsletterPage() {
       </div>
 
       {!env.mailConfigured && (
-        <div className="notice notice--error" style={{ marginBottom: "var(--space-8)" }}>
+        <div className="notice notice--error notice--page">
           <strong>E-mail is not configured.</strong> Nothing will actually be
           delivered — messages are written to the server log instead. Set the
           SMTP variables to send for real.
@@ -95,7 +95,7 @@ export default async function AdminNewsletterPage() {
                 <td className="admin-table__num admin-table__actions">
                   {issue.sent_count}
                   {issue.failed_count > 0 && (
-                    <span style={{ color: "var(--accent)" }}>
+                    <span className="admin-table__fail">
                       {" "}
                       · {issue.failed_count} failed
                     </span>

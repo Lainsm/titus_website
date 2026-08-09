@@ -26,10 +26,10 @@ export default async function EditTextPage({
       <div className="admin-head">
         <div>
           <p className="label label--accent">Editing</p>
-          <h1 className="admin-head__title" style={{ fontSize: "var(--text-xl)" }}>
+          <h1 className="admin-head__title admin-head__title--document">
             {post.title || "Untitled"}
           </h1>
-          <p className="label" style={{ marginTop: "var(--space-2)" }}>
+          <p className="label label--stacked">
             Last saved {formatDateShort(post.updated_at)}
           </p>
         </div>

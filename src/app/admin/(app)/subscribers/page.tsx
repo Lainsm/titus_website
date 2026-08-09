@@ -93,13 +93,7 @@ export default async function AdminSubscribersPage() {
                   {formatDateShort(subscriber.created_at)}
                 </td>
                 <td className="admin-table__actions">
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "var(--space-2)",
-                      justifyContent: "flex-end",
-                    }}
-                  >
+                  <div className="action-row">
                     {subscriber.status === "confirmed" && (
                       <form action={unsubscribeAction} className="inline-form">
                         <input type="hidden" name="id" value={subscriber.id} />

@@ -48,7 +48,7 @@ export function LoginForm() {
         />
       </div>
 
-      <div style={{ marginTop: "var(--space-2)" }}>
+      <div className="login__actions">
         <SubmitButton />
       </div>
     </form>

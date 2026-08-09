@@ -66,7 +66,7 @@ export default async function AdminOverview() {
       </div>
 
       {!env.mailConfigured && (
-        <div className="notice notice--error" style={{ marginBottom: "var(--space-8)" }}>
+        <div className="notice notice--error notice--page">
           <strong>E-mail is not configured.</strong> Confirmation messages and
           newsletters are written to the server log instead of being sent. Set
           SMTP_HOST, SMTP_USER and SMTP_PASSWORD to enable sending.
@@ -75,7 +75,7 @@ export default async function AdminOverview() {
 
       <section className="admin-section">
         <div className="admin-head">
-          <h2 className="admin-head__title" style={{ fontSize: "var(--text-xl)" }}>
+          <h2 className="admin-head__title admin-head__title--document">
             Recent texts
           </h2>
           <div className="admin-head__actions">

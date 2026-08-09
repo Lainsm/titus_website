@@ -28,7 +28,7 @@ export default async function EditPublicationPage({
       <div className="admin-head">
         <div>
           <p className="label label--accent">Publications</p>
-          <h1 className="admin-head__title" style={{ fontSize: "var(--text-xl)" }}>
+          <h1 className="admin-head__title admin-head__title--document">
             {publication.title}
           </h1>
         </div>
@@ -52,7 +52,7 @@ export default async function EditPublicationPage({
       </div>
 
       {error === "title" && (
-        <div className="notice notice--error" style={{ marginBottom: "var(--space-8)" }}>
+        <div className="notice notice--error notice--page">
           A publication needs a title.
         </div>
       )}
@@ -60,7 +60,7 @@ export default async function EditPublicationPage({
       <form action={savePublicationAction}>
         <input type="hidden" name="id" value={publication.id} />
         <PublicationFields publication={publication} />
-        <div style={{ marginTop: "var(--space-8)" }}>
+        <div className="form-actions">
           <button type="submit" className="button">
             Save changes
           </button>

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { NewsletterBlock } from "@/components/newsletter-block";
 import { StandingPage } from "@/components/standing-page";
 import { site } from "@/lib/site";
 
@@ -17,9 +16,14 @@ const FALLBACK = `
 
 export default function UeberPage() {
   return (
-    <>
-      <StandingPage slug="ueber" title="Über" fallbackHtml={FALLBACK} />
-      <NewsletterBlock />
-    </>
+    <StandingPage
+      slug="ueber"
+      title="Über"
+      fallbackHtml={FALLBACK}
+      portrait={{
+        src: "/img/titus-bihl.jpg",
+        alt: `${site.name} vor einer Fensterfront mit Blick über die Themse auf die Hochhäuser von Canary Wharf.`,
+      }}
+    />
   );
 }

@@ -28,6 +28,9 @@ export type MailInput = {
   subject: string;
   html: string;
   text?: string;
+  /** Overrides the configured Reply-To. The contact form points it at the
+      sender, so hitting reply in the mail client answers them directly. */
+  replyTo?: string;
   /** Adds List-Unsubscribe headers so Gmail shows a native unsubscribe link. */
   unsubscribeUrl?: string;
 };
@@ -47,7 +50,7 @@ export async function sendMail(input: MailInput): Promise<void> {
   await transporter().sendMail({
     from,
     to: input.to,
-    replyTo,
+    replyTo: input.replyTo ?? replyTo,
     subject: input.subject,
     html: input.html,
     text: input.text ?? htmlToText(input.html),
@@ -116,7 +119,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e0da;">
         <tr>
           <td style="padding:36px 40px 8px 40px;border-bottom:2px solid #16110f;">
-            <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#16110f;font-weight:600;">
+            <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#16110f;font-weight:700;">
               ${escapeHtml(site.name)}
             </div>
             <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.06em;color:#7a736c;padding-top:4px;padding-bottom:20px;">
@@ -126,7 +129,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
         </tr>
         <tr>
           <td style="padding:32px 40px;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.65;color:#16110f;">
-            ${title ? `<h1 style="margin:0 0 20px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-0.01em;color:#16110f;">${escapeHtml(title)}</h1>` : ""}
+            ${title ? `<h1 style="margin:0 0 20px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:24px;line-height:1.25;font-weight:700;letter-spacing:-0.01em;color:#16110f;">${escapeHtml(title)}</h1>` : ""}
             ${bodyHtml}
           </td>
         </tr>
@@ -150,7 +153,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;"
 const buttonHtml = (href: string, label: string) =>
   `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0;">
      <tr><td style="background:#16110f;">
-       <a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:600;color:#ffffff;text-decoration:none;">${escapeHtml(label)}</a>
+       <a href="${escapeHtml(href)}" style="display:inline-block;padding:13px 26px;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:#ffffff;text-decoration:none;">${escapeHtml(label)}</a>
      </td></tr>
    </table>`;
 
@@ -185,16 +188,54 @@ export function confirmationEmail(options: {
 }
 
 /**
+ * The contact form's own notification, addressed to the author. The visitor's
+ * words are escaped and their line breaks kept — this is the one template
+ * whose body comes from outside, so nothing in it may be trusted as markup.
+ */
+export function contactEmail(options: {
+  name: string;
+  email: string;
+  message: string;
+}): { subject: string; html: string } {
+  const rows: [string, string][] = [
+    ["Name", options.name || "—"],
+    ["E-Mail", options.email],
+  ];
+
+  return {
+    subject: `Nachricht über die Website — ${options.name || options.email}`,
+    html: emailLayout({
+      preheader: options.message.slice(0, 120),
+      title: "Nachricht über das Kontaktformular",
+      bodyHtml: `
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 24px 0;">
+          ${rows
+            .map(
+              ([label, value]) => `<tr>
+            <td style="padding:0 16px 6px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:0.06em;color:#5c544b;white-space:nowrap;">${escapeHtml(label)}</td>
+            <td style="padding:0 0 6px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;color:#16110f;">${escapeHtml(value)}</td>
+          </tr>`,
+            )
+            .join("")}
+        </table>
+        <div style="padding-top:20px;border-top:1px solid #e2e0da;white-space:pre-wrap;">${escapeHtml(options.message)}</div>
+      `,
+      footerHtml: `Antworten geht direkt an ${escapeHtml(options.email)}.`,
+    }),
+  };
+}
+
+/**
  * Mail clients strip <style> blocks, so every tag in the body needs its own
  * inline styles. The editor produces a small, known set of tags.
  */
 const EMAIL_TAG_STYLES: Record<string, string> = {
   p: "margin:0 0 18px 0;font-family:Georgia,'Times New Roman',serif;font-size:17px;line-height:1.65;color:#16110f;",
-  h2: "margin:32px 0 12px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.3;font-weight:600;color:#16110f;",
-  h3: "margin:28px 0 10px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;font-weight:600;color:#16110f;",
+  h2: "margin:32px 0 12px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:20px;line-height:1.3;font-weight:700;color:#16110f;",
+  h3: "margin:28px 0 10px 0;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:13px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;color:#16110f;",
   h4: "margin:24px 0 10px 0;font-family:Georgia,serif;font-style:italic;font-size:17px;color:#16110f;",
   blockquote:
-    "margin:22px 0;padding:0 0 0 18px;border-left:2px solid #c1272d;font-family:Georgia,serif;font-style:italic;font-size:17px;line-height:1.6;color:#443d37;",
+    "margin:22px 0;padding:0 0 0 18px;border-left:2px solid #cb9e59;font-family:Georgia,serif;font-style:italic;font-size:17px;line-height:1.6;color:#443d37;",
   ul: "margin:0 0 18px 0;padding-left:22px;font-family:Georgia,serif;font-size:17px;line-height:1.65;color:#16110f;",
   ol: "margin:0 0 18px 0;padding-left:22px;font-family:Georgia,serif;font-size:17px;line-height:1.65;color:#16110f;",
   li: "margin-bottom:6px;",

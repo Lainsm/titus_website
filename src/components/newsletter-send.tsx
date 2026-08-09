@@ -101,16 +101,14 @@ export function NewsletterSendPanel({
         </button>
         {testState && (testState.message || testState.error) && (
           <p
-            className="field__hint"
-            style={{
-              marginTop: "var(--space-3)",
-              color: testState.error ? "var(--accent)" : undefined,
-            }}
+            className={`field__hint field__hint--after${
+              testState.error ? " field__hint--error" : ""
+            }`}
           >
             {testState.error || testState.message}
           </p>
         )}
-        <p className="field__hint" style={{ marginTop: "var(--space-3)" }}>
+        <p className="field__hint field__hint--after">
           Save the draft first — the test uses the saved version.
         </p>
       </div>
@@ -118,8 +116,8 @@ export function NewsletterSendPanel({
       <div className="panel">
         <p className="panel__title">Send</p>
 
-        <p style={{ marginBottom: "var(--space-4)" }}>
-          <span className="stat__value" style={{ fontSize: "var(--text-xl)" }}>
+        <p className="send-count">
+          <span className="stat__value stat__value--inline">
             {Math.max(outstanding, 0)}
           </span>
           <span className="label">
@@ -128,7 +126,7 @@ export function NewsletterSendPanel({
         </p>
 
         {delivered > 0 && (
-          <p className="field__hint" style={{ marginBottom: "var(--space-4)" }}>
+          <p className="field__hint field__hint--before">
             Already delivered to {delivered} of {recipientCount}.
           </p>
         )}
@@ -149,7 +147,7 @@ export function NewsletterSendPanel({
             </button>
 
             {outstanding <= 0 && (
-              <p className="field__hint" style={{ marginTop: "var(--space-3)" }}>
+              <p className="field__hint field__hint--after">
                 Nobody has confirmed their subscription yet.
               </p>
             )}
@@ -158,11 +156,9 @@ export function NewsletterSendPanel({
 
         {progress && (progress.message || progress.error) && (
           <p
-            className="field__hint"
-            style={{
-              marginTop: "var(--space-4)",
-              color: progress.error ? "var(--accent)" : undefined,
-            }}
+            className={`field__hint field__hint--after${
+              progress.error ? " field__hint--error" : ""
+            }`}
           >
             {progress.error || progress.message}
             {progress.failed > 0 && ` ${progress.failed} failed.`}
@@ -170,7 +166,7 @@ export function NewsletterSendPanel({
         )}
 
         {sending && (
-          <p className="field__hint" style={{ marginTop: "var(--space-3)" }}>
+          <p className="field__hint field__hint--after">
             Keep this page open until it finishes.
           </p>
         )}

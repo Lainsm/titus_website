@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { NewsletterBlock } from "@/components/newsletter-block";
 import { getNeighbours, getPublishedPost } from "@/lib/content";
 import { categoryLabel, formatDate, site } from "@/lib/site";
 import {
@@ -62,7 +61,7 @@ export default async function PostPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <article className="container article">
+      <article className="article">
         <header className="article__header">
           <div className="article__eyebrow">
             <p className="label label--accent">
@@ -128,15 +127,13 @@ export default async function PostPage({ params }: Props) {
             )}
           </div>
 
-          <p style={{ marginTop: "var(--space-12)" }}>
+          <p className="article__back">
             <Link href="/texte" className="button button--ghost">
               Zum Register
             </Link>
           </p>
         </footer>
       </article>
-
-      <NewsletterBlock />
     </>
   );
 }

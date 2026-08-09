@@ -7,9 +7,12 @@ export const site = {
   role: "Arzt und Autor",
   tagline: "Erzählungen, Essays und Kommentare",
   description:
-    "Erzählungen, Essays und Kommentare von Titus Lainsbury, Arzt und Autor.",
+    "Erzählungen, Essays und Kommentare von Titus Bihl, Arzt und Autor.",
   locale: "de-CH",
   place: "Schweiz",
+  /* Where the contact form delivers. Shown on the page too, so someone can
+     write from their own client instead of using the form. */
+  email: "titus@bihl.ch",
 } as const;
 
 export const CATEGORIES = {

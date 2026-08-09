@@ -9,17 +9,17 @@
   display: flex;
   flex-direction: column;
   background: var(--admin-bg);
-  font-size: var(--text-base);
+  font-size: var(--text-body);
 }
 
 /* --- Bar ---------------------------------------------------------------- */
 
 .admin-bar {
-  border-bottom: 2px solid var(--rule-strong);
   background: var(--paper);
+  border-bottom: var(--hairline) solid var(--rule);
   position: sticky;
   top: 0;
-  z-index: 30;
+  z-index: var(--z-admin-bar);
 }
 
 .admin-bar__inner {
@@ -39,9 +39,9 @@
 }
 
 .admin-bar__brand strong {
-  font-size: var(--text-base);
-  font-weight: 650;
-  letter-spacing: -0.01em;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-title);
 }
 
 .admin-nav {
@@ -52,10 +52,9 @@
 }
 
 .admin-nav a {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-fine);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-label);
   text-decoration: none;
   color: var(--ink-muted);
   padding-bottom: 3px;
@@ -68,30 +67,29 @@
 
 .admin-nav a[aria-current="page"] {
   color: var(--ink);
-  border-bottom-color: var(--accent);
+  border-bottom-color: var(--accent-text);
 }
 
 .admin-bar__user {
   display: flex;
   align-items: center;
   gap: var(--space-4);
-  font-size: var(--text-xs);
+  font-size: var(--text-fine);
   color: var(--ink-muted);
 }
 
 .admin-bar__signout {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: var(--text-fine);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-label);
   color: var(--ink-muted);
-  border-bottom: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule-control);
   padding-bottom: 1px;
 }
 
 .admin-bar__signout:hover {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
+  color: var(--accent-text);
+  border-bottom-color: var(--accent-text);
 }
 
 /* --- Page scaffolding --------------------------------------------------- */
@@ -113,10 +111,20 @@
 }
 
 .admin-head__title {
-  font-size: var(--text-2xl);
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-title);
+  line-height: var(--leading-title);
+}
+
+/*
+ * Editing screens put the document's own title in the heading slot, and those
+ * run long. A step down keeps a two-line title from pushing the actions below
+ * the fold — previously every one of those five screens patched it with an
+ * inline font-size, which is how a scale stops being a scale.
+ */
+.admin-head__title--document {
+  font-size: var(--text-sub);
 }
 
 .admin-head__actions {
@@ -140,13 +148,22 @@
 }
 
 .stat__value {
-  font-size: var(--text-2xl);
-  font-weight: 650;
-  letter-spacing: -0.03em;
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-head);
   font-variant-numeric: tabular-nums;
-  line-height: 1.1;
+  line-height: var(--leading-title);
   display: block;
   margin-bottom: var(--space-1);
+}
+
+/* The same figure sitting inline above its label rather than in a stat card. */
+.stat__value--inline {
+  font-size: var(--text-sub);
+}
+
+.send-count {
+  margin-bottom: var(--space-4);
 }
 
 /* --- Table -------------------------------------------------------------- */
@@ -154,15 +171,14 @@
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--text-sm);
+  font-size: var(--text-fine);
 }
 
 .admin-table th {
   text-align: left;
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-label);
   color: var(--ink-muted);
   padding: var(--space-3) var(--space-3) var(--space-3) 0;
   border-bottom: 2px solid var(--rule-strong);
@@ -180,19 +196,19 @@
 }
 
 .admin-table__title {
-  font-size: var(--text-base);
-  font-weight: 600;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
   text-decoration: none;
-  line-height: 1.3;
+  line-height: var(--leading-sub);
 }
 
 .admin-table__title:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .admin-table__sub {
   color: var(--ink-faint);
-  font-size: var(--text-xs);
+  font-size: var(--text-fine);
   margin-top: 2px;
 }
 
@@ -207,15 +223,25 @@
   white-space: nowrap;
 }
 
+/* Row of buttons in a table cell, pushed to the trailing edge. */
+.action-row {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+.admin-table__fail {
+  color: var(--accent-text);
+}
+
 /* --- Badges ------------------------------------------------------------- */
 
 .badge {
   display: inline-block;
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  padding: 0.2rem 0.5rem;
+  font-size: var(--text-meta);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-label);
+  padding: var(--space-1) var(--space-2);
   border: 1px solid currentColor;
   color: var(--ink-muted);
   white-space: nowrap;
@@ -224,37 +250,25 @@
 .badge--published,
 .badge--confirmed,
 .badge--sent {
-  color: #1f7a4d;
+  color: var(--success);
 }
 
 .badge--draft,
 .badge--pending {
-  color: #9a6b12;
+  color: var(--warning);
 }
 
 .badge--unsubscribed,
 .badge--failed {
-  color: var(--accent);
-}
-
-@media (prefers-color-scheme: dark) {
-  .badge--published,
-  .badge--confirmed,
-  .badge--sent {
-    color: #4cc98c;
-  }
-  .badge--draft,
-  .badge--pending {
-    color: #d9a441;
-  }
+  color: var(--accent-text);
 }
 
 /* --- Forms -------------------------------------------------------------- */
 
 .admin-form {
   display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: var(--gutter);
+  grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+  gap: var(--grid-gutter);
   row-gap: var(--space-6);
   align-items: start;
 }
@@ -287,14 +301,13 @@
 .panel {
   border: var(--hairline) solid var(--rule);
   background: var(--admin-panel);
-  padding: var(--space-5, 1.25rem);
+  padding: var(--space-4);
 }
 
 .panel__title {
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-label);
   color: var(--ink-muted);
   padding-bottom: var(--space-3);
   margin-bottom: var(--space-4);
@@ -306,19 +319,51 @@
   margin-top: var(--space-4);
 }
 
-.field__hint {
-  font-size: var(--text-xs);
-  color: var(--ink-faint);
-  line-height: 1.45;
+/* The status badge line at the head of a publishing panel. */
+.panel__status {
+  margin-bottom: var(--space-4);
 }
 
-.title-input {
+/* The submit row closing a form, set apart from the fields above it. */
+.form-actions {
+  margin-top: var(--space-8);
+}
+
+.field__hint {
+  font-size: var(--text-fine);
+  color: var(--ink-faint);
+  line-height: var(--leading-snug);
+}
+
+/*
+ * A hint sits either below the control it explains or above it. Those were the
+ * only two relationships in the codebase, but they had been written inline
+ * with three different values (space-3 and space-4 for the same "below").
+ */
+.field__hint--after {
+  margin-top: var(--space-3);
+}
+
+.field__hint--before {
+  margin-bottom: var(--space-4);
+}
+
+/* Send and test results report through the hint slot; failures read as errors. */
+.field__hint--error {
+  color: var(--accent-text);
+}
+
+/*
+ * Scoped to .field so it outweighs `.field input` (0,1,1) on specificity
+ * rather than on !important — the same reason the two !importants were here.
+ */
+.field .title-input {
   font-family: var(--font-sans);
-  font-size: var(--text-2xl) !important;
-  font-weight: 650;
-  letter-spacing: -0.025em;
-  line-height: 1.15;
-  padding: var(--space-4) !important;
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-title);
+  line-height: var(--leading-title);
+  padding: var(--space-4);
 }
 
 .button-row {
@@ -329,26 +374,26 @@
 }
 
 .button--small {
-  padding: 0.45rem 0.85rem;
-  font-size: var(--text-2xs);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-meta);
 }
 
 .button--danger {
   background: transparent;
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-text);
+  color: var(--accent-text);
 }
 
-.button--danger:hover:not(:disabled) {
+.button--danger:hover:not(:disabled, [aria-disabled="true"]) {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--accent-ink);
 }
 
 /* --- Editor ------------------------------------------------------------- */
 
 .editor {
-  border: var(--hairline) solid var(--rule);
+  border: var(--hairline) solid var(--rule-control);
   background: var(--admin-panel);
   display: flex;
   flex-direction: column;
@@ -363,26 +408,27 @@
   background: var(--paper-sunken);
   position: sticky;
   top: 4.2rem;
-  z-index: 10;
+  z-index: var(--z-toolbar);
 }
 
 .editor__button {
-  font-size: var(--text-xs);
-  font-weight: 600;
+  font-size: var(--text-fine);
+  font-weight: var(--weight-bold);
   min-width: 2rem;
   height: 2rem;
-  padding-inline: 0.55rem;
+  padding-inline: var(--space-2);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--ink-muted);
   border: 1px solid transparent;
-  transition: all 100ms ease;
+  transition: color 100ms ease, border-color 100ms ease,
+    background-color 100ms ease;
 }
 
 .editor__button:hover {
   color: var(--ink);
-  border-color: var(--rule);
+  border-color: var(--rule-control);
   background: var(--admin-panel);
 }
 
@@ -402,15 +448,23 @@
 /* The writing surface mirrors the published page: same serif, same measure. */
 .editor__surface .tiptap {
   font-family: var(--font-serif);
-  font-size: var(--text-lg);
-  line-height: 1.72;
+  font-size: var(--text-lead);
+  line-height: var(--leading-prose);
   color: var(--ink-soft);
   padding: var(--space-8) var(--space-6);
   min-height: 26rem;
+  /*
+   * A ring drawn round a 26rem writing surface is noise, so focus moves to the
+   * panel border instead (below) — suppressed here, not dropped.
+   */
   outline: none;
   hyphens: auto;
   -webkit-hyphens: auto;
   max-width: 40em;
+}
+
+.editor:has(.tiptap:focus) {
+  border-color: var(--ink);
 }
 
 .editor__surface .tiptap > * + * {
@@ -419,10 +473,10 @@
 
 .editor__surface .tiptap h2 {
   font-family: var(--font-sans);
-  font-size: var(--text-xl);
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  line-height: 1.25;
+  font-size: var(--text-sub);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-title);
+  line-height: var(--leading-sub);
   color: var(--ink);
   margin-top: 1.8em;
   hyphens: none;
@@ -430,10 +484,9 @@
 
 .editor__surface .tiptap h3 {
   font-family: var(--font-sans);
-  font-size: var(--text-base);
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-label);
   color: var(--ink);
   margin-top: 1.8em;
   hyphens: none;
@@ -452,7 +505,7 @@
 }
 
 .editor__surface .tiptap a {
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: underline;
 }
 
@@ -477,9 +530,8 @@
   padding: var(--space-2) var(--space-3);
   border-top: var(--hairline) solid var(--rule);
   background: var(--paper-sunken);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-size: var(--text-meta);
+  letter-spacing: var(--track-label);
   color: var(--ink-faint);
   font-variant-numeric: tabular-nums;
 }
@@ -490,7 +542,7 @@
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: var(--gutter);
+  padding: var(--margin);
   background: var(--paper);
 }
 
@@ -506,9 +558,9 @@
 }
 
 .login__title {
-  font-size: var(--text-xl);
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  font-size: var(--text-sub);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-title);
   margin-top: var(--space-2);
 }
 
@@ -518,9 +570,14 @@
   gap: var(--space-4);
 }
 
+/* Beyond the form's own gap: the button is a different group from the fields. */
+.login__actions {
+  margin-top: var(--space-2);
+}
+
 .login__back {
   margin-top: var(--space-8);
-  font-size: var(--text-xs);
+  font-size: var(--text-fine);
   color: var(--ink-faint);
   text-align: center;
 }
@@ -536,7 +593,7 @@
   color: var(--ink-muted);
   border-top: 2px solid var(--rule-strong);
   max-width: 34em;
-  line-height: 1.6;
+  line-height: var(--leading-body);
 }
 
 .admin-section + .admin-section {

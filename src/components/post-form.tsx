@@ -132,7 +132,7 @@ export function PostForm({
         <div className="panel">
           <p className="panel__title">Publishing</p>
 
-          <p style={{ marginBottom: "var(--space-4)" }}>
+          <p className="panel__status">
             <span className={`badge badge--${values.status}`}>
               {values.status}
             </span>
@@ -152,7 +152,7 @@ export function PostForm({
           </div>
 
           {values.status === "published" && values.id && (
-            <p className="field__hint" style={{ marginTop: "var(--space-4)" }}>
+            <p className="field__hint field__hint--after">
               <Link href={`/texte/${values.slug}`} target="_blank">
                 View on the site ↗
               </Link>

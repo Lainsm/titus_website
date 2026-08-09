@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { NewsletterBlock } from "@/components/newsletter-block";
 import { PostIndex } from "@/components/post-index";
 import {
   categoryCounts,
@@ -36,7 +35,7 @@ export default async function TextePage({
 
   return (
     <>
-      <section className="container section--tight" style={{ paddingTop: "var(--space-16)" }}>
+      <div className="listing">
         <div className="section-head">
           <p className="section-head__label label">Register</p>
           <h1 className="section-head__title">
@@ -67,13 +66,9 @@ export default async function TextePage({
         {posts.length > 0 ? (
           <PostIndex posts={posts} />
         ) : (
-          <p className="empty">
-            In dieser Gattung ist noch nichts erschienen.
-          </p>
+          <p className="empty">In dieser Gattung ist noch nichts erschienen.</p>
         )}
-      </section>
-
-      <NewsletterBlock />
+      </div>
     </>
   );
 }

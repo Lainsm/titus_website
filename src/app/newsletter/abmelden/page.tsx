@@ -35,7 +35,7 @@ export default async function AbmeldenPage({
   }
 
   return (
-    <div className="container status-page">
+    <div className="status-page">
       <p className="label label--accent">Newsletter</p>
       <h1 className="status-page__title">
         {done ? "Sie sind abgemeldet." : "Der Abmeldelink ist ungültig."}

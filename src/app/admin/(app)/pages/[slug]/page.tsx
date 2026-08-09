@@ -27,7 +27,7 @@ export default async function EditStandingPage({
       <div className="admin-head">
         <div>
           <p className="label label--accent">Page</p>
-          <h1 className="admin-head__title" style={{ fontSize: "var(--text-xl)" }}>
+          <h1 className="admin-head__title admin-head__title--document">
             {page?.title || meta.title}
           </h1>
         </div>

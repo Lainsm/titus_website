@@ -18,6 +18,17 @@ export const initialSubscribeState: SubscribeState = {
   message: "",
 };
 
+export type ContactState = {
+  status: "idle" | "success" | "error";
+  message: string;
+  /** Which field the error belongs to, so the form can mark it invalid. */
+  field?: "name" | "email" | "message";
+};
+export const initialContactState: ContactState = {
+  status: "idle",
+  message: "",
+};
+
 export type PostFormState = { error: string; message: string };
 export const initialPostFormState: PostFormState = { error: "", message: "" };
 

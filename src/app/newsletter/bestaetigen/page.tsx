@@ -58,7 +58,7 @@ export default async function BestaetigenPage({
   }[state];
 
   return (
-    <div className="container status-page">
+    <div className="status-page">
       <p className="label label--accent">{copy.label}</p>
       <h1 className="status-page__title">{copy.title}</h1>
       <p className="status-page__text">{copy.text}</p>

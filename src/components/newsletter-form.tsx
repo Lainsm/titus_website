@@ -107,7 +107,7 @@ export function NewsletterForm({
           <div className="panel">
             <p className="panel__title">Draft</p>
             <SaveButton />
-            <p className="field__hint" style={{ marginTop: "var(--space-4)" }}>
+            <p className="field__hint field__hint--after">
               Save before sending — sending uses the last saved version.
             </p>
           </div>

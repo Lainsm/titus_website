@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const LINKS = [
+  { href: "/", label: "Home" },
   { href: "/texte", label: "Texte" },
   { href: "/publikationen", label: "Publikationen" },
   { href: "/ueber", label: "Über" },
@@ -16,8 +17,11 @@ export function SiteNav() {
   return (
     <nav className="site-nav" aria-label="Hauptnavigation">
       {LINKS.map((link) => {
+        // "/" is a prefix of every route, so it only ever matches exactly.
         const active =
-          pathname === link.href || pathname.startsWith(`${link.href}/`);
+          link.href === "/"
+            ? pathname === "/"
+            : pathname === link.href || pathname.startsWith(`${link.href}/`);
         return (
           <Link
             key={link.href}

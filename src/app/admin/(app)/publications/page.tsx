@@ -30,7 +30,7 @@ export default async function AdminPublicationsPage({
       </div>
 
       {saved === "1" && (
-        <div className="notice notice--success" style={{ marginBottom: "var(--space-8)" }}>
+        <div className="notice notice--success notice--page">
           Saved.
         </div>
       )}

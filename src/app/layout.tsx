@@ -27,7 +27,10 @@ const sourceSerif = localFont({
     { path: "../../public/fonts/serif-latin.woff2", style: "normal" },
     { path: "../../public/fonts/serif-latin-ext.woff2", style: "normal" },
     { path: "../../public/fonts/serif-italic-latin.woff2", style: "italic" },
-    { path: "../../public/fonts/serif-italic-latin-ext.woff2", style: "italic" },
+    {
+      path: "../../public/fonts/serif-italic-latin-ext.woff2",
+      style: "italic",
+    },
   ],
   variable: "--font-source-serif",
   display: "swap",
@@ -71,59 +74,52 @@ export default function RootLayout({
         <header className="site-header">
           <div className="container site-header__inner">
             <Link href="/" className="wordmark">
-              <span className="wordmark__name">{site.name}</span>
-              <span className="wordmark__role">{site.role}</span>
+              {site.name}
             </Link>
             <SiteNav />
           </div>
         </header>
 
-        <main id="inhalt" className="site-main">
-          {children}
+        {/*
+          Every page is one vertical stack on the section rhythm. It lives here
+          so no page restates it and the gap is identical on every route.
+        */}
+        {/*
+          tabIndex={-1} so the skip link actually moves focus here rather than
+          only setting the scroll position — several browsers do the latter and
+          leave the screen reader's cursor at the top of the document. The
+          landing offset under the sticky header is handled by
+          `scroll-padding-top` on <html>.
+        */}
+        <main id="inhalt" className="site-main" tabIndex={-1}>
+          <div className="container">
+            <div className="stack">{children}</div>
+          </div>
         </main>
 
+        {/*
+          One line, the way lazare.studio does it: the reading paths already
+          live in the header, so the footer carries only what has nowhere else
+          to go — links at one end, the copyright at the other. Labelled,
+          because an unnamed <nav> here would announce identically to the one
+          in the header.
+        */}
         <footer className="site-footer">
-          <div className="container">
-            <div className="site-footer__grid">
-              <div className="site-footer__block">
-                <p className="label label--ink">{site.name}</p>
-                <p
-                  style={{
-                    marginTop: "var(--space-3)",
-                    color: "var(--ink-muted)",
-                    maxWidth: "24em",
-                  }}
-                >
-                  {site.tagline}
-                </p>
-              </div>
+          <div className="container site-footer__inner">
+            <nav className="site-footer__nav" aria-label="Fusszeile">
+              <Link href="/kontakt">Kontakt</Link>
+              <Link href="/newsletter">Newsletter</Link>
+              <Link href="/impressum">Impressum</Link>
+              <Link href="/datenschutz">Datenschutz</Link>
+              <a href="/feed.xml">RSS</a>
+            </nav>
 
-              <div className="site-footer__block">
-                <p className="label">Lesen</p>
-                <nav className="site-footer__links">
-                  <Link href="/texte">Alle Texte</Link>
-                  <Link href="/publikationen">Publikationen</Link>
-                  <Link href="/ueber">Über den Autor</Link>
-                  <a href="/feed.xml">RSS-Feed</a>
-                </nav>
-              </div>
-
-              <div className="site-footer__block">
-                <p className="label">Kontakt</p>
-                <nav className="site-footer__links">
-                  <Link href="/newsletter">Newsletter</Link>
-                  <Link href="/impressum">Impressum</Link>
-                  <Link href="/datenschutz">Datenschutz</Link>
-                </nav>
-              </div>
-            </div>
-
-            <div className="site-footer__colophon">
+            <p className="site-footer__colophon">
               <span>
                 © {new Date().getFullYear()} {site.name}
               </span>
               <span>Gestaltet und gehostet in der Schweiz</span>
-            </div>
+            </p>
           </div>
         </footer>
       </body>

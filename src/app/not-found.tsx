@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <div className="container status-page">
+    <div className="status-page">
       <p className="label label--accent">404</p>
       <h1 className="status-page__title">Diese Seite gibt es nicht.</h1>
       <p className="status-page__text">

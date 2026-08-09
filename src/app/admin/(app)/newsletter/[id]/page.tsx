@@ -50,11 +50,11 @@ export default async function EditNewsletterPage({
       <div className="admin-head">
         <div>
           <p className="label label--accent">Newsletter</p>
-          <h1 className="admin-head__title" style={{ fontSize: "var(--text-xl)" }}>
+          <h1 className="admin-head__title admin-head__title--document">
             {issue.subject || "Untitled issue"}
           </h1>
           {issue.sent_at && (
-            <p className="label" style={{ marginTop: "var(--space-2)" }}>
+            <p className="label label--stacked">
               Sent {formatDateShort(issue.sent_at)}
             </p>
           )}

@@ -9,11 +9,13 @@ export const metadata: Metadata = {
 
 export default function NewsletterPage() {
   return (
-    <div className="container simple-page">
-      <h1 className="simple-page__title">Newsletter</h1>
+    <div className="simple-page">
+      <div className="simple-page__aside">
+        <h1 className="simple-page__title">Newsletter</h1>
+      </div>
 
       <div className="simple-page__body">
-        <div className="prose" style={{ marginBottom: "var(--space-12)" }}>
+        <div className="prose simple-page__intro">
           <p>
             Wenn ein neuer Text erscheint, schicke ich eine kurze Nachricht:
             den Titel, die ersten Sätze und einen Link. Mehr nicht.
@@ -26,8 +28,8 @@ export default function NewsletterPage() {
           </p>
         </div>
 
-        <div style={{ borderTop: "2px solid var(--rule-strong)", paddingTop: "var(--space-8)" }}>
-          <p className="label label--accent" style={{ marginBottom: "var(--space-6)" }}>
+        <div className="signup">
+          <p className="label label--accent signup__label">
             Anmeldung
           </p>
           <SubscribeForm />

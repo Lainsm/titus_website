@@ -32,7 +32,7 @@ export default async function NewPublicationPage({
       </div>
 
       {error === "title" && (
-        <div className="notice notice--error" style={{ marginBottom: "var(--space-8)" }}>
+        <div className="notice notice--error notice--page">
           A publication needs a title.
         </div>
       )}

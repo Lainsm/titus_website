@@ -4,31 +4,29 @@ import { categoryLabel, formatDateShort } from "@/lib/site";
 import { readingMinutes, refine } from "@/lib/typography";
 
 /**
- * The numbered register of texts — the central navigational device of the
- * site. Number, date and category sit in the left columns; the title and
- * teaser occupy the main measure.
+ * The register of texts — the central navigational device of the site. Date
+ * and category sit in the left column; the title and teaser occupy the main
+ * measure. No running number: its position in a list that reorders itself on
+ * every filter told a reader nothing the title does not.
  */
 export function PostIndex({
   posts,
-  startNumber = 1,
   showLead = true,
 }: {
   posts: PostSummary[];
-  startNumber?: number;
   showLead?: boolean;
 }) {
   return (
-    <ol className="index-list">
-      {posts.map((post, i) => (
+    // role="list" restores what `list-style: none` takes away: Safari drops
+    // list semantics from an unstyled list, and this register is the site's
+    // main navigational device — the item count is the point.
+    <ol className="index-list" role="list">
+      {posts.map((post) => (
         <li key={post.id} className="index-item">
           <Link href={`/texte/${post.slug}`} className="index-item__link">
-            <span className="index-item__number" aria-hidden="true">
-              {String(startNumber + i).padStart(2, "0")}
-            </span>
-
             <span className="index-item__meta">
               <span className="label">{categoryLabel(post.category)}</span>
-              <span className="label" style={{ color: "var(--ink-faint)" }}>
+              <span className="label label--faint">
                 {formatDateShort(post.published_at)}
               </span>
             </span>
@@ -38,14 +36,7 @@ export function PostIndex({
               {showLead && post.lead && (
                 <span className="index-item__lead">{refine(post.lead)}</span>
               )}
-              <span
-                className="label"
-                style={{
-                  display: "block",
-                  marginTop: "var(--space-3)",
-                  color: "var(--ink-faint)",
-                }}
-              >
+              <span className="label label--faint index-item__reading">
                 {readingMinutes(post.word_count)} Min. Lesezeit
               </span>
             </span>
