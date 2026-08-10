@@ -110,16 +110,49 @@ if (existsSync(standaloneServer)) {
     ],
     { cwd: join(root, ".next", "standalone"), stdio: "inherit", env: process.env },
   );
+  child.on("error", (error) => {
+    banner([`could not start the standalone server: ${error.message}`]);
+    process.exit(1);
+  });
   child.on("exit", (code) => process.exit(code ?? 0));
 } else {
+  /*
+   * No build output. Before trying anything, check whether the dependencies
+   * are even installed: spawning a missing binary throws an unhandled ENOENT
+   * whose stack trace says nothing about the actual cause, which is simply
+   * that the build command has not run on this server yet.
+   */
+  const nextBin = join(root, "node_modules", ".bin", "next");
+  if (!existsSync(nextBin)) {
+    banner([
+      `NOTHING IS BUILT ON THIS SERVER YET.`,
+      ``,
+      `node_modules is missing, so no dependencies are installed, and there is`,
+      `no .next/standalone, so nothing is compiled. Git carries neither: they`,
+      `are produced by the build command, which has not run.`,
+      ``,
+      `Set the build command in the hosting panel to:`,
+      ``,
+      `  npm ci && npm run build:deploy`,
+      ``,
+      `(prefix it with \`git pull\` if the panel deploys from Git), save it to`,
+      `run it, wait for it to finish, then restart the application.`,
+    ]);
+    process.exit(1);
+  }
+
   banner([
     `no .next/standalone found — falling back to \`next start\`.`,
-    `If this is production, the build command should be \`npm run build:deploy\`.`,
+    `In production the build command should be \`npm run build:deploy\`.`,
   ]);
-  const child = spawn(
-    join(root, "node_modules", ".bin", "next"),
-    ["start", "-p", port, "-H", hostname],
-    { cwd: root, stdio: "inherit", env: process.env },
-  );
+  const child = spawn(nextBin, ["start", "-p", port, "-H", hostname], {
+    cwd: root,
+    stdio: "inherit",
+    env: process.env,
+  });
+  child.on("error", (error) => {
+    banner([`could not start \`next start\`: ${error.message}`]);
+    process.exit(1);
+  });
   child.on("exit", (code) => process.exit(code ?? 0));
 }
