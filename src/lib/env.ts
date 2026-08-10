@@ -1,10 +1,26 @@
 import "server-only";
 
+/*
+ * The message matters as much as the throw. This used to say "copy
+ * .env.example to .env.local" in every environment — advice that is simply
+ * wrong on a server, where `.env.local` is a development convention that the
+ * production server never reads, and where the file would be gitignored anyway
+ * so it never arrived with the deploy.
+ */
 function required(name: string): string {
   const value = process.env[name];
   if (!value) {
+    const inProduction = process.env.NODE_ENV === "production";
     throw new Error(
-      `Missing environment variable ${name}. Copy .env.example to .env.local and fill it in.`,
+      inProduction
+        ? [
+            `Missing environment variable ${name}.`,
+            `The server is running but has nothing to connect to. Set it either`,
+            `in the hosting panel's environment section, or in a .env file placed`,
+            `next to package.json. Note that .env.local is NOT read in production,`,
+            `and that .env is gitignored — so a deploy from Git never carries one.`,
+          ].join(" ")
+        : `Missing environment variable ${name}. Copy .env.example to .env.local and fill it in.`,
     );
   }
   return value;

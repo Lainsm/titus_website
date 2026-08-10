@@ -92,11 +92,24 @@ if (existsSync(standaloneServer)) {
   }
   banner([`starting the standalone server: .next/standalone/server.js`]);
   // cwd matters: server.js resolves .next/static and public relative to itself.
-  const child = spawn(process.execPath, ["--env-file-if-exists=.env", "server.js"], {
-    cwd: join(root, ".next", "standalone"),
-    stdio: "inherit",
-    env: process.env,
-  });
+  /*
+   * Both env files are passed by absolute path, root one first.
+   *
+   * A relative --env-file-if-exists=.env would resolve against the standalone
+   * folder only — and `next build` deletes and recreates that folder, so an
+   * .env placed there is destroyed by the next deploy. The copy next to
+   * package.json is the one that survives, which is why it wins here: later
+   * --env-file flags do not overwrite variables already set.
+   */
+  const child = spawn(
+    process.execPath,
+    [
+      `--env-file-if-exists=${join(root, ".env")}`,
+      `--env-file-if-exists=${join(root, ".next", "standalone", ".env")}`,
+      "server.js",
+    ],
+    { cwd: join(root, ".next", "standalone"), stdio: "inherit", env: process.env },
+  );
   child.on("exit", (code) => process.exit(code ?? 0));
 } else {
   banner([

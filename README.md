@@ -53,7 +53,7 @@ be tried out before any mailbox exists.
 ### One product, one bill
 
 The app runs on Infomaniak's **web hosting with Node.js**, and uses the
-**MariaDB** database that comes with that same hosting. Nothing else to rent:
+**MariaDB** database that comes with that same subscription. Nothing else to rent:
 no Public Cloud, no managed database service, no VPS to patch.
 
 That is why the app is written against MariaDB rather than PostgreSQL — the
@@ -61,10 +61,24 @@ bundled database is MySQL/MariaDB, and matching it keeps the whole site on one
 product. Create the database in the Manager's **Databases** section and paste
 its host, name and credentials into `DATABASE_URL`.
 
-Because the database sits on the same hosting as the app, `DB_SSL` stays off.
-Turn it on only if you ever move the database somewhere else — and then read
-the note on `DB_SSL_CA` in the environment table below, because verification is
-on by default and will fail loudly rather than silently trusting anyone.
+The database is **not** on the same machine as the app: Infomaniak hands you a
+hostname like `483sm8.myd.infomaniak.com` on port 3306, reached over their
+internal network. So `DATABASE_URL` looks like
+
+```
+mysql://user:password@483sm8.myd.infomaniak.com:3306/dbname
+```
+
+Start with `DB_SSL=0`. Infomaniak's shared MySQL does not advertise TLS on this
+service, and turning it on when the server does not offer it fails the
+connection outright. If you later move the database somewhere that does support
+TLS, set `DB_SSL=1` — the certificate is then verified, and `DB_SSL_CA` takes
+the provider's PEM if their CA is not in the system trust store.
+
+Two things to check on that page if the connection is refused: that the
+database user is allowed to connect from the web hosting (Infomaniak restricts
+this per user), and that you are using the database's own user, not your
+Infomaniak account login.
 
 ### Building for upload
 
@@ -96,7 +110,7 @@ scripts use `--env-file-if-exists`).
 | --- | --- |
 | `SITE_URL` | Two jobs. It builds every confirmation and unsubscribe link, **and** it is the origin Next.js allows Server Actions from (`serverActions.allowedOrigins` in `next.config.ts`). Behind Infomaniak's reverse proxy the host Next sees is not the one the browser used, so if this is wrong or unset every form on the site fails its CSRF check. It must be set for `npm run build:deploy` as well as at runtime. |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Next encrypts the variables a Server Action closes over. Left unset it invents a new key per build, so a reader who was mid-submit across a deploy gets "Failed to find Server Action". Generate once with `openssl rand -base64 32` and keep it. Needed at build **and** run time. |
-| `DB_SSL` / `DB_SSL_CA` | Leave `DB_SSL=0` on Infomaniak web hosting, where the database is on the same host. Set it to `1` if the database ever moves elsewhere; the certificate is then verified, and `DB_SSL_CA` takes the provider's PEM if their CA is not in the system store. `DB_SSL_INSECURE=1` turns verification off — it encrypts but authenticates nothing, so only on a trusted local network. |
+| `DB_SSL` / `DB_SSL_CA` | Leave `DB_SSL=0` on Infomaniak. The database has its own hostname (`…myd.infomaniak.com:3306`) but that shared MySQL service does not offer TLS, and enabling it fails the connection. Set it to `1` only if the database moves somewhere that supports TLS; the certificate is then verified, and `DB_SSL_CA` takes the provider's PEM if their CA is not in the system store. `DB_SSL_INSECURE=1` turns verification off — it encrypts but authenticates nothing. |
 
 ### First run on the server
 
@@ -188,7 +202,7 @@ actually mattered, in case any of them ever bites again:
 | Variable | Purpose |
 | --- | --- |
 | `DATABASE_URL` | MariaDB/MySQL connection string, e.g. `mysql://user:pass@host:3306/db`. Required. |
-| `DB_SSL` | `1` when the database is on another host. Off for Infomaniak web hosting. |
+| `DB_SSL` | `1` only if the database host supports TLS. Off for Infomaniak's shared MySQL. |
 | `SITE_URL` | Public base URL, no trailing slash. Used for every link in outgoing mail. |
 | `SMTP_HOST` | `mail.infomaniak.com` |
 | `SMTP_PORT` | `587` (STARTTLS) or `465` (implicit TLS) |
