@@ -425,11 +425,35 @@ a {
   line-height: var(--leading-title);
 }
 
+/*
+ * Below 40rem the links no longer fit beside the wordmark, and because the row
+ * wraps they do not overflow — they drop underneath, doubling a band that is
+ * already 142px tall and pinned to the top of a phone screen. So they fold
+ * into a sheet instead, and the burger takes their place.
+ *
+ * 40rem rather than one of the site's other steps because that is where the
+ * row actually stops fitting: the wordmark sets ~154px at 28px bold, the five
+ * links ~330px at 13px once their four 24px gaps are counted, and two 20px
+ * page margins put the whole line at ~548px. 640px is the nearest round step
+ * above that with enough headroom for Helvetica and Arial, which are wider
+ * than Inter and are what actually paints the first frame while the webfont
+ * swaps in. Kept in sync by hand with NAV_FITS_INLINE in site-nav.tsx.
+ */
 .site-nav {
-  display: flex;
+  display: none;
   gap: var(--gap-group);
   align-items: baseline;
   flex-wrap: wrap;
+}
+
+@media (min-width: 40rem) {
+  .site-nav {
+    display: flex;
+  }
+
+  .nav-toggle {
+    display: none;
+  }
 }
 
 .site-nav a {
@@ -453,6 +477,206 @@ a {
 
 .site-nav a[aria-current="page"] {
   border-bottom-color: var(--ink);
+}
+
+/* --- Burger and menu sheet ---------------------------------------------- */
+
+/*
+ * The button's own box is 22x14 — the bars and nothing else — so that it
+ * cannot grow the header row. .site-header__inner aligns on the baseline and
+ * its height comes from the wordmark's 30px line box; a 44px control dropped
+ * into that row would push the band 14px taller than --header-height claims,
+ * and every anchor offset on the site reads that token. The touch target is
+ * put back below as a 44px ::before, which paints nothing and takes no space.
+ */
+.nav-toggle {
+  position: relative;
+  align-self: center;
+  width: 22px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.nav-toggle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  translate: -50% -50%;
+}
+
+/*
+ * Three bars from one element: the span is the middle one, its two pseudos
+ * the outer pair, offset by 6px against their own 2px height to sit at 0, 6
+ * and 12 in the 14px box.
+ */
+.nav-toggle__bars,
+.nav-toggle__bars::before,
+.nav-toggle__bars::after {
+  position: absolute;
+  left: 0;
+  width: 22px;
+  height: 2px;
+  background-color: var(--ink);
+  transition: background-color 120ms ease;
+}
+
+.nav-toggle__bars {
+  top: 6px;
+}
+
+.nav-toggle__bars::before {
+  content: "";
+  top: -6px;
+}
+
+.nav-toggle__bars::after {
+  content: "";
+  top: 6px;
+}
+
+/* The cross is the same two rules again: the span turned 45°, its pseudo a
+   further 90° against that, which lands it at -45°. */
+.nav-toggle__cross,
+.nav-toggle__cross::after {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  width: 22px;
+  height: 2px;
+  background-color: var(--ink);
+  transition: background-color 120ms ease;
+}
+
+.nav-toggle__cross {
+  rotate: 45deg;
+}
+
+.nav-toggle__cross::after {
+  content: "";
+  top: 0;
+  rotate: -90deg;
+}
+
+/* The ochre the nav links underline themselves with, for the one case where
+   this button is seen with a pointer: a narrow desktop window. */
+.nav-toggle:hover .nav-toggle__bars,
+.nav-toggle:hover .nav-toggle__bars::before,
+.nav-toggle:hover .nav-toggle__bars::after,
+.nav-toggle:hover .nav-toggle__cross,
+.nav-toggle:hover .nav-toggle__cross::after {
+  background-color: var(--accent-text);
+}
+
+/*
+ * Undoing the dialog UA sheet — centred, shrink-to-fit, bordered, padded —
+ * and putting the page's own sheet of paper in its place. The grain is
+ * anchored to the viewport exactly as the header and body anchor theirs, so
+ * the menu reads as the same sheet continuing rather than a panel laid over
+ * it. overscroll-behavior keeps an iOS rubber-band from dragging the page
+ * behind it into view at the edges.
+ */
+.nav-sheet {
+  width: 100%;
+  height: 100dvh;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: var(--paper);
+  background-image: var(--grain);
+  background-attachment: fixed;
+  color: var(--ink);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  opacity: 1;
+  /*
+   * `display` and `overlay` have to be named for the closing fade to happen
+   * at all: both are discrete, and without allow-discrete the element leaves
+   * the top layer and stops rendering on the same frame the opacity starts
+   * moving. Engines that do not know allow-discrete or @starting-style skip
+   * the fade in both directions and simply cut, which is a fine menu.
+   */
+  transition:
+    opacity 160ms ease,
+    display 160ms allow-discrete,
+    overlay 160ms allow-discrete;
+}
+
+.nav-sheet:not([open]) {
+  opacity: 0;
+}
+
+@starting-style {
+  .nav-sheet[open] {
+    opacity: 0;
+  }
+}
+
+/* The sheet covers the viewport, so this shows only under an overscroll
+   bounce. ::backdrop sits outside the element tree in engines that predate
+   its inheriting from the originating element; there the custom property
+   fails to substitute and the backdrop is simply transparent, which the
+   sheet is already covering. */
+.nav-sheet::backdrop {
+  background-color: var(--paper);
+}
+
+/*
+ * Set at --text-title, the size a section head takes, because with five items
+ * and a whole screen there is no reason to whisper. Aligned to the start so
+ * the underline under the current page measures the word and not the column.
+ * The 8px block padding is what carries each row past a 44px touch target —
+ * 30px of line box gets there on its own only for the two-line case.
+ */
+.nav-sheet__nav {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: var(--space-4);
+  padding-bottom: var(--gap-section);
+}
+
+.nav-sheet__nav a {
+  position: relative;
+  font-size: var(--text-title);
+  line-height: var(--leading-title);
+  letter-spacing: var(--track-title);
+  text-decoration: none;
+  padding-block: var(--space-2);
+}
+
+/*
+ * The rule is a pseudo rather than this element's own border because the two
+ * measurements it sits between disagree: the padding has to carry the row to
+ * a 46px touch target, and the rule has to sit a few pixels under the word
+ * the way the header's 2px does. A border can only ever be at the padding
+ * edge, which at this size leaves it visibly adrift of the word it marks.
+ */
+.nav-sheet__nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--space-1);
+  height: 2px;
+  background-color: transparent;
+  transition: background-color 120ms ease;
+}
+
+.nav-sheet__nav a:hover::after {
+  background-color: var(--accent-text);
+}
+
+.nav-sheet__nav a[aria-current="page"]::after {
+  background-color: var(--ink);
 }
 
 /*
