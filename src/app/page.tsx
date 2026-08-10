@@ -31,6 +31,7 @@ export default async function HomePage() {
       <div className="split">
         <div className="split__main">
           <section className="masthead">
+            <p>Hohoho</p>
             <h1 className="masthead__statement">
               Über das Erzählen, das Zweifeln und das, was <em>zwischen</em> den
               Diagnosen liegt.
