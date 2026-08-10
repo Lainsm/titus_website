@@ -52,6 +52,29 @@ function toLocalInput(value: string | null): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/*
+ * The wall clock above, resolved to an actual instant — and it has to happen
+ * here, in the browser, because that is the only place that knows which zone
+ * the author meant.
+ *
+ * A `datetime-local` value carries no offset, so `new Date()` resolves it
+ * against whatever zone the code runs in. toLocalInput writes the field in the
+ * editor's zone; a server parsing that same string resolves it in the host's,
+ * which on a Linux box is UTC and not where the author is sitting. The two
+ * disagree by the offset between them, and because the field is read back and
+ * rewritten on every save the error compounds: two hours per save through a
+ * Swiss summer. Since every public query gates on `published_at <= now()`,
+ * a couple of edits are enough to date a published text into the future and
+ * drop it out of the index, the feed and its own page.
+ *
+ * Sending the instant instead leaves the server nothing to interpret.
+ */
+function toInstant(localValue: string): string {
+  if (!localValue) return "";
+  const d = new Date(localValue);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
 export function PostForm({
   values,
   savedNotice = false,
@@ -63,13 +86,44 @@ export function PostForm({
     savePostAction,
     initialPostFormState,
   );
+  /*
+   * Every field the author can change is React state, deliberately. React
+   * resets an uncontrolled <form action> once the action returns, and a reset
+   * restores each field to its *default*, not to what was just saved. For text
+   * inputs that is invisible, because React keeps `defaultValue` in step with
+   * what it rendered, so the reset lands on the new value. A <select> has no
+   * such sync — React marks the chosen <option> at mount and never touches
+   * `defaultSelected` again — so an uncontrolled category silently snapped back
+   * to whatever the page was first loaded with, and the next Save wrote that
+   * stale value over the good one.
+   */
   const [title, setTitle] = useState(values.title);
   const [slug, setSlug] = useState(values.slug);
+  const [category, setCategory] = useState(values.category);
+  const [publishedAt, setPublishedAt] = useState(
+    toLocalInput(values.published_at),
+  );
 
   const previewSlug = slug || slugify(title) || "text";
 
   return (
-    <form action={formAction} className="admin-form">
+    /*
+     * React resets the form once the action returns. That is the right default
+     * for a form you submit and walk away from — a comment box, a search — and
+     * exactly wrong for one you stay in and keep editing: this is an edit
+     * screen, and the reset only ever throws away what the author just typed.
+     *
+     * Controlled fields are not enough on their own to stop it. React writes to
+     * the DOM only where this render differs from the last one, so a value that
+     * survived the round trip unchanged — the category you saved a moment ago —
+     * produces no write, and the reset then moves the DOM out from under it.
+     * The reset event is cancelable, so this refuses it outright.
+     */
+    <form
+      action={formAction}
+      onReset={(event) => event.preventDefault()}
+      className="admin-form"
+    >
       {values.id && <input type="hidden" name="id" value={values.id} />}
 
       <div className="admin-form__main">
@@ -168,7 +222,8 @@ export function PostForm({
             <select
               id="category"
               name="category"
-              defaultValue={values.category}
+              value={category}
+              onChange={(event) => setCategory(event.target.value)}
             >
               {CATEGORY_KEYS.map((key) => (
                 <option key={key} value={key}>
@@ -180,11 +235,21 @@ export function PostForm({
 
           <div className="field">
             <label htmlFor="published_at">Publication date</label>
+            {/*
+              No `name` on the visible field: the form submits the instant
+              below, not the wall clock, so the server never has to guess a
+              zone. See toInstant.
+            */}
             <input
               id="published_at"
-              name="published_at"
               type="datetime-local"
-              defaultValue={toLocalInput(values.published_at)}
+              value={publishedAt}
+              onChange={(event) => setPublishedAt(event.target.value)}
+            />
+            <input
+              type="hidden"
+              name="published_at"
+              value={toInstant(publishedAt)}
             />
             <p className="field__hint">
               Leave empty to use the moment you press Publish. A future date
