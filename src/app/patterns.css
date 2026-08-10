@@ -657,6 +657,7 @@ a.register__link:hover .register__name {
 
 .simple-page {
   row-gap: var(--space-8);
+  padding-top: 2rem;
 }
 
 /* Newsletter page: prose, then the form on its own sheet. */
