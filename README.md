@@ -50,65 +50,61 @@ be tried out before any mailbox exists.
 
 ## Deploying to Infomaniak
 
-### One product, one bill
+### This site's actual settings
 
-The app runs on Infomaniak's **web hosting with Node.js**, and uses the
-**MariaDB** database that comes with that same subscription. Nothing else to rent:
-no Public Cloud, no managed database service, no VPS to patch.
+| | Value |
+| --- | --- |
+| Domain | `https://www.bihl.ch` |
+| Database host | `483sm8.myd.infomaniak.com` |
+| Database port | `3306` |
+| Database name | `483sm8_titus` |
+| MariaDB version | 10.11.18 |
+| Node version | 24 |
 
-That is why the app is written against MariaDB rather than PostgreSQL — the
-bundled database is MySQL/MariaDB, and matching it keeps the whole site on one
-product. Create the database in the Manager's **Databases** section and paste
-its host, name and credentials into `DATABASE_URL`.
+In the Manager: **Hébergement Web → Sites → your site → Paramètres avancés → Node.js**
 
-The database is **not** on the same machine as the app: Infomaniak hands you a
-hostname like `483sm8.myd.infomaniak.com` on port 3306, reached over their
-internal network. So `DATABASE_URL` looks like
+| Field | Value |
+| --- | --- |
+| Dossier d'exécution | `./` |
+| Commande de build | see below |
+| Commande de démarrage | `npm start` |
+| Version de Node.js | 24 |
+
+**Build command.** Infomaniak's Node.js panel has no environment-variables
+field, so the configuration is written to a `.env` file by the build itself.
+Substitute the database user and password, then paste as one line:
 
 ```
-mysql://user:password@483sm8.myd.infomaniak.com:3306/dbname
+git pull && printf 'DATABASE_URL=mysql://USER:PASSWORD@483sm8.myd.infomaniak.com:3306/483sm8_titus\nSITE_URL=https://www.bihl.ch\n' > .env && chmod 600 .env && npm ci && npm run build:deploy
 ```
 
-Start with `DB_SSL=0`. Infomaniak's shared MySQL does not advertise TLS on this
-service, and turning it on when the server does not offer it fails the
-connection outright. If you later move the database somewhere that does support
-TLS, set `DB_SSL=1` — the certificate is then verified, and `DB_SSL_CA` takes
-the provider's PEM if their CA is not in the system trust store.
+Saving that field runs the build; the app then needs a **restart** from the
+site dashboard. To deploy any later commit, re-save the field and restart.
 
-Two things to check on that page if the connection is refused: that the
-database user is allowed to connect from the web hosting (Infomaniak restricts
-this per user), and that you are using the database's own user, not your
-Infomaniak account login.
+Notes on that line, each of which is a way it goes wrong:
 
-### Building for upload
+- Keep the **single quotes**. A password containing `$` or `!` is otherwise
+  rewritten by the shell before it is stored.
+- A password containing `@ : / # ?` breaks the URL — those characters end the
+  credentials early. Percent-encode them, or use a long alphanumeric password,
+  which has more entropy than a short one with symbols anyway.
+- `npm ci`, not `npm install`: `node_modules` is gitignored, so a clone has no
+  dependencies at all.
+- `npm run build:deploy`, not `npm run build`: the plain build leaves the
+  static assets outside the server, and the site loads with no CSS or fonts.
+- `chmod 600` keeps the credentials off a shared host's other accounts.
 
-```bash
-npm run build:deploy
-```
-
-This produces `.next/standalone`, a self-contained Node server with the static
-assets and fonts copied in. Upload that folder (plus `db/` and `scripts/` if
-you want to run migrations on the server), then start it with:
-
-```bash
-node server.js
-```
-
-It listens on `PORT` (Infomaniak sets this for you) and `HOSTNAME`. In the
-Infomaniak dashboard set the **entry point** to `server.js` and the **build
-command** to `npm run build:deploy`. Node must be **20.12 or newer** (the
-scripts use `--env-file-if-exists`).
-
-> **`.env.local` is not read by the standalone server.** It is a development
-> convenience only. Every variable in `.env.example` has to be set in the
-> Infomaniak dashboard's environment section, or the server starts and then
-> returns 500 on the first request that touches the database.
+Putting the password in that field does mean it lives in an Infomaniak config
+field and possibly in build logs. The alternative is to create the same `.env`
+by hand in **Web FTP** (next to `package.json`) and drop the `printf` from the
+build command — the secret then never touches the panel. Either works; the file
+survives redeploys because it sits outside `.next`.
 
 ### Environment variables that are easy to miss
 
 | Variable | Why it matters |
 | --- | --- |
-| `SITE_URL` | Two jobs. It builds every confirmation and unsubscribe link, **and** it is the origin Next.js allows Server Actions from (`serverActions.allowedOrigins` in `next.config.ts`). Behind Infomaniak's reverse proxy the host Next sees is not the one the browser used, so if this is wrong or unset every form on the site fails its CSRF check. It must be set for `npm run build:deploy` as well as at runtime. |
+| `SITE_URL` | Two jobs. It builds every confirmation and unsubscribe link, **and** it is the origin Next.js allows Server Actions from. Both spellings of the domain are allowed automatically (`www.bihl.ch` and `bihl.ch`), so a visitor on either can still submit a form. If it is wrong or unset, every form fails its CSRF check. |
 | `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` | Next encrypts the variables a Server Action closes over. Left unset it invents a new key per build, so a reader who was mid-submit across a deploy gets "Failed to find Server Action". Generate once with `openssl rand -base64 32` and keep it. Needed at build **and** run time. |
 | `DB_SSL` / `DB_SSL_CA` | Leave `DB_SSL=0` on Infomaniak. The database has its own hostname (`…myd.infomaniak.com:3306`) but that shared MySQL service does not offer TLS, and enabling it fails the connection. Set it to `1` only if the database moves somewhere that supports TLS; the certificate is then verified, and `DB_SSL_CA` takes the provider's PEM if their CA is not in the system store. `DB_SSL_INSECURE=1` turns verification off — it encrypts but authenticates nothing. |
 

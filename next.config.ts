@@ -8,11 +8,20 @@ import type { NextConfig } from "next";
  * CSRF check strict AND correct; leaving it unset and hoping is how people end
  * up disabling the check instead.
  */
-const siteHost = (() => {
+const allowedOrigins = (() => {
   const url = process.env.SITE_URL;
   if (!url) return undefined;
   try {
-    return new URL(url).host;
+    const { host } = new URL(url);
+    /*
+     * Both spellings of the domain. SITE_URL names one of them — say
+     * www.bihl.ch — but a visitor who types bihl.ch arrives with that Origin,
+     * and the CSRF check compares the two literally. Listing only the
+     * configured host means every form on the apex domain fails with an
+     * error that looks nothing like a redirect problem.
+     */
+    const counterpart = host.startsWith("www.") ? host.slice(4) : `www.${host}`;
+    return [...new Set([host, counterpart])];
   } catch {
     return undefined;
   }
@@ -26,7 +35,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     serverActions: {
-      ...(siteHost ? { allowedOrigins: [siteHost] } : {}),
+      ...(allowedOrigins ? { allowedOrigins } : {}),
       // Nothing here uploads a file; the smaller ceiling is a cheaper request
       // to reject. The contact form's own cap is 5 000 characters.
       bodySizeLimit: "256kb",
