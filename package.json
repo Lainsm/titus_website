@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "build:deploy": "next build && node scripts/package-standalone.mjs",
-    "start": "next start",
+    "start": "node scripts/start.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:typography && npm run test:db",
@@ -17,7 +17,9 @@
     "test:db": "node --env-file-if-exists=.env.local scripts/smoke-test.mjs",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "db:seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
-    "admin:create": "node --env-file-if-exists=.env.local scripts/create-admin.mjs"
+    "admin:create": "node --env-file-if-exists=.env.local scripts/create-admin.mjs",
+    "db:sql": "node scripts/build-install-sql.mjs",
+    "admin:sql": "node scripts/admin-sql.mjs"
   },
   "dependencies": {
     "@tiptap/pm": "^3.29.2",

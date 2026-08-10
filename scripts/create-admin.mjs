@@ -7,20 +7,11 @@
  * The password is asked for on the terminal and never echoed. For scripted
  * setup, set ADMIN_PASSWORD in the environment instead.
  */
-import { randomBytes, scrypt as scryptCallback } from "node:crypto";
 import { createInterface } from "node:readline";
 import { Writable } from "node:stream";
-import { promisify } from "node:util";
 import { connect } from "./db-connect.mjs";
+import { hashPassword } from "./hash-password.mjs";
 
-const scrypt = promisify(scryptCallback);
-
-// Must stay identical to hashPassword() in src/lib/auth.ts.
-async function hashPassword(password) {
-  const salt = randomBytes(16);
-  const key = await scrypt(password.normalize("NFKC"), salt, 64);
-  return `scrypt$${salt.toString("hex")}$${key.toString("hex")}`;
-}
 
 /** Reads a line without echoing it, by muting the readline output stream. */
 function askHidden(question) {

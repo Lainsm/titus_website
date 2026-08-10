@@ -34,7 +34,7 @@ if (existsSync("public")) {
  */
 mkdirSync(`${standalone}/scripts`, { recursive: true });
 cpSync("db", `${standalone}/db`, { recursive: true });
-for (const file of ["db-connect.mjs", "migrate.mjs", "create-admin.mjs", "seed.mjs"]) {
+for (const file of ["db-connect.mjs", "hash-password.mjs", "migrate.mjs", "create-admin.mjs", "seed.mjs", "admin-sql.mjs"]) {
   if (existsSync(`scripts/${file}`)) {
     cpSync(`scripts/${file}`, `${standalone}/scripts/${file}`);
   }

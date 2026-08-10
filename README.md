@@ -100,10 +100,36 @@ scripts use `--env-file-if-exists`).
 
 ### First run on the server
 
+If you have SSH (Infomaniak's Node.js hosting does):
+
 ```bash
 npm run db:migrate
 npm run admin:create -- titus@bihl.ch "Titus Bihl"
 ```
+
+**Or, with only phpMyAdmin.** Do not import `db/migrations/001_init.sql` on its
+own — it is the first migration, not the whole schema, and a database built
+from it alone is missing `rate_limits`, so the contact form and the newsletter
+sign-up both fail on their first request. Generate the complete file instead:
+
+```bash
+npm run db:sql        # writes db/install.sql from every migration
+```
+
+Import that into an **empty** database (phpMyAdmin → Import). It is safe to run
+twice, and it records the migrations as applied so a later `npm run db:migrate`
+over SSH does not try to repeat them.
+
+The login cannot be created by hand, because the password column holds a salted
+scrypt hash rather than the password. Generate that INSERT locally and paste it
+into phpMyAdmin → SQL:
+
+```bash
+npm run admin:sql -- titus@bihl.ch "Titus Bihl"
+```
+
+`db/install.sql` is generated — re-run `npm run db:sql` after adding any
+migration, or it will fall behind `db/migrations/`.
 
 ### Checklist before going live
 
