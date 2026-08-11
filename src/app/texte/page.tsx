@@ -37,7 +37,6 @@ export default async function TextePage({
     <>
       <div className="listing">
         <div className="section-head">
-          <p className="section-head__label label">Register</p>
           <h1 className="section-head__title">
             {active ? categoryPlural(active) : "Alle Texte"}
           </h1>

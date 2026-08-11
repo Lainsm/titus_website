@@ -17,7 +17,6 @@ export default async function PublikationenPage() {
     <>
       <div className="listing">
         <div className="section-head">
-          <p className="section-head__label label">Verzeichnis</p>
           <h1 className="section-head__title">Publikationen</h1>
           <p className="section-head__aside">
             {publications.length}{" "}
