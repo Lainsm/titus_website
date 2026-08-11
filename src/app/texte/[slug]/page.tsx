@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
 import { getNeighbours, getPublishedPost } from "@/lib/content";
+import { env } from "@/lib/env";
+import { authorId, authorSchema } from "@/lib/schema";
 import { categoryLabel, formatDate, site } from "@/lib/site";
 import {
   excerptFrom,
@@ -41,39 +44,39 @@ export default async function PostPage({ params }: Props) {
 
   const { older, newer } = await getNeighbours(post);
 
-  // JSON-LD so search engines and readers-later apps understand the piece.
+  /*
+   * JSON-LD so search engines and readers-later apps understand the piece.
+   *
+   * Two things in one @graph rather than an Article alone: the piece, and the
+   * person who wrote it. The author is a reference to the shared @id, not a
+   * repeated name string — a name is a label that a dozen other people might
+   * share, an @id is a claim that this is the same man each time. The Person
+   * is defined here as well as on /ueber so the page stands on its own;
+   * search engines merge the two on the identifier.
+   */
+  const url = `${env.siteUrl}/texte/${post.slug}`;
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Article",
-    headline: post.title,
-    datePublished: post.published_at,
-    dateModified: post.updated_at,
-    inLanguage: "de-CH",
-    author: { "@type": "Person", name: site.name },
-    description: post.lead || excerptFrom(post.body_html, 180),
+    "@graph": [
+      {
+        "@type": "Article",
+        "@id": `${url}#article`,
+        headline: post.title,
+        datePublished: post.published_at,
+        dateModified: post.updated_at,
+        inLanguage: "de-CH",
+        author: { "@id": authorId() },
+        description: post.lead || excerptFrom(post.body_html, 180),
+        mainEntityOfPage: url,
+        url,
+      },
+      authorSchema(),
+    ],
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        /*
-         * JSON.stringify is not enough on its own: it happily emits a literal
-         * `</script>` inside a string, which closes this tag early and lets
-         * everything after it parse as markup. A title is authored in the back
-         * office rather than by the public, but "only an admin can reach it"
-         * is an authorisation argument, not an escaping one — and this is the
-         * one place on the site where a title is written into a script body.
-         * Escaping < and & costs nothing and holds regardless.
-         */
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(jsonLd)
-            .replace(/</g, "\\u003c")
-            .replace(/&/g, "\\u0026")
-            .replace(/\u2028/g, "\\u2028")
-            .replace(/\u2029/g, "\\u2029"),
-        }}
-      />
+      <JsonLd data={jsonLd} />
 
       <article className="article">
         <header className="article__header">
