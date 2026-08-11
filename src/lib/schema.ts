@@ -33,7 +33,7 @@ export function authorSchema() {
     name: site.name,
     alternateName: AUTHOR_ALTERNATE_NAME,
     jobTitle: site.role,
-    description: `${site.name} — ${site.role}. ${site.tagline}.`,
+    description: `${site.name} - ${site.role}. ${site.tagline}.`,
     url: `${env.siteUrl}/ueber`,
     image: `${env.siteUrl}/img/titus-bihl.jpg`,
     // Omitted entirely while empty: an empty sameAs asserts nothing and reads

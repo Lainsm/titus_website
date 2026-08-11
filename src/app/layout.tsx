@@ -41,15 +41,20 @@ const sourceSerif = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
   title: {
-    default: `${site.name} — ${site.tagline}`,
-    template: `%s — ${site.name}`,
+    /*
+     * A hyphen, not the em dash the rest of the site sets. This string is not
+     * typography — it is the line Google prints in a result, where an em dash
+     * reads as a stray mark rather than punctuation.
+     */
+    default: `${site.name} - ${site.tagline}`,
+    template: `%s - ${site.name}`,
   },
   description: site.description,
   openGraph: {
     type: "website",
     locale: "de_CH",
     siteName: site.name,
-    title: `${site.name} — ${site.tagline}`,
+    title: `${site.name} - ${site.tagline}`,
     description: site.description,
   },
   alternates: {
