@@ -83,6 +83,19 @@ export const PUBLICATION_KINDS = {
 
 export type PublicationKind = keyof typeof PUBLICATION_KINDS;
 
+/** What a press entry is — a piece written about him, not by him. */
+export const PRESS_KINDS = {
+  artikel: "Artikel",
+  interview: "Interview",
+  portraet: "Porträt",
+  rezension: "Rezension",
+  radio: "Radio",
+} as const;
+
+export type PressKind = keyof typeof PRESS_KINDS;
+
+export const PRESS_KIND_KEYS = Object.keys(PRESS_KINDS) as PressKind[];
+
 /** Swiss German date: 8. August 2026 */
 export function formatDate(date: Date | string | null): string {
   if (!date) return "";

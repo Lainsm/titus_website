@@ -188,3 +188,43 @@ export async function listPublications(): Promise<Publication[]> {
 export async function getPublication(id: number): Promise<Publication | null> {
   return queryOne<Publication>(`SELECT * FROM publications WHERE id = $1`, [id]);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Press                                                                       */
+/* -------------------------------------------------------------------------- */
+
+export type PressItem = {
+  id: number;
+  outlet: string;
+  title: string;
+  url: string;
+  /* Read as a plain 'YYYY-MM-DD' string, never a Date. The column is a DATE
+     with no time and therefore no zone; turning it into a Date here would
+     invent midnight in whichever zone the server happens to run in. */
+  published_at: string | null;
+  kind: string;
+  quote: string;
+  archive_url: string;
+  language: string;
+  sort_order: number;
+};
+
+const PRESS_COLUMNS = `
+  id, outlet, title, url, DATE_FORMAT(published_at, '%Y-%m-%d') AS published_at,
+  kind, quote, archive_url, language, sort_order
+`;
+
+/** Newest first — press reads as a reverse chronology, not a ranked list. */
+export async function listPress(): Promise<PressItem[]> {
+  return query<PressItem>(
+    `SELECT ${PRESS_COLUMNS} FROM press
+      ORDER BY sort_order ASC, published_at DESC, id DESC`,
+  );
+}
+
+export async function getPressItem(id: number): Promise<PressItem | null> {
+  return queryOne<PressItem>(
+    `SELECT ${PRESS_COLUMNS} FROM press WHERE id = $1`,
+    [id],
+  );
+}

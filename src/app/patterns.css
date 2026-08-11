@@ -15,6 +15,7 @@
 .article__header,
 .article__body,
 .publication,
+.press-item,
 .simple-page {
   display: grid;
   grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
@@ -809,4 +810,89 @@ a.register__link:hover .register__name {
   display: flex;
   gap: var(--space-4);
   flex-wrap: wrap;
+}
+
+
+/* --- Press --------------------------------------------------------------- */
+
+/*
+ * Coverage about him, at the foot of the Über page. Set quieter than the
+ * publication list it sits near: this is corroboration, not work, and it
+ * should read as a footnote to the page rather than compete with it.
+ */
+.press {
+  border-top: var(--hairline) solid var(--rule);
+  padding-top: var(--space-8);
+}
+
+.press__heading {
+  font-size: var(--text-sub);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--track-title);
+  line-height: var(--leading-sub);
+  margin-bottom: var(--gap-group);
+}
+
+.press__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-group);
+}
+
+.press-item {
+  row-gap: var(--space-3);
+}
+
+.press-item__meta {
+  grid-column: 1 / -1;
+  font-variant-numeric: tabular-nums;
+}
+
+.press-item__body {
+  grid-column: 1 / -1;
+}
+
+.press-item__outlet {
+  margin-bottom: var(--space-2);
+}
+
+.press-item__title {
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-sub);
+  letter-spacing: var(--track-title);
+  text-wrap: balance;
+}
+
+/* The headline is the link, so it carries the underline the site gives every
+   other link that leaves the page. */
+.press-item__title a {
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.press-item__title a:hover {
+  border-bottom-color: var(--accent-text);
+}
+
+/* Serif and indented, the way a pulled sentence is set in the prose. */
+.press-item__quote {
+  font-family: var(--font-serif);
+  font-size: var(--text-lead);
+  line-height: var(--leading-prose);
+  color: var(--ink-soft);
+  max-width: var(--measure);
+  margin-top: var(--space-3);
+  padding-left: var(--space-4);
+  border-left: 2px solid var(--rule);
+}
+
+@media (min-width: 60rem) {
+  .press-item__meta {
+    grid-column: 1 / 3;
+  }
+  .press-item__body {
+    grid-column: 3 / 11;
+  }
 }
