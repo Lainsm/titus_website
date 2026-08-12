@@ -125,7 +125,7 @@ export default async function PostPage({ params }: Props) {
           <div className="neighbours">
             {older ? (
               <Link href={`/texte/${older.slug}`} className="neighbour">
-                <span className="label">← Älterer Text</span>
+                <span className="label">Älterer Text: </span>
                 <span className="neighbour__title">{refine(older.title)}</span>
               </Link>
             ) : (
@@ -136,7 +136,7 @@ export default async function PostPage({ params }: Props) {
                 href={`/texte/${newer.slug}`}
                 className="neighbour neighbour--next"
               >
-                <span className="label">Neuerer Text →</span>
+                <span className="label">Neuerer Text: </span>
                 <span className="neighbour__title">{refine(newer.title)}</span>
               </Link>
             ) : (
